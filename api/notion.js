@@ -5,7 +5,7 @@ const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  
+
   const { action, filter_brand, filter_date_start, filter_date_end } = req.query;
 
   try {
@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
       if (filter_brand) {
         filters.push({
           property: '브랜드명',
-          multi_select: { contains: filter_brand }
+          select: { equals: filter_brand }
         });
       }
 
@@ -39,7 +39,6 @@ module.exports = async (req, res) => {
         sorts: [{ property: '날짜', direction: 'descending' }]
       });
 
-      // 각 페이지의 블록(이미지, 영상) 가져오기
       const pages = await Promise.all(
         response.results.map(async (page) => {
           const blocks = await notion.blocks.children.list({ block_id: page.id });
@@ -51,12 +50,11 @@ module.exports = async (req, res) => {
 
     } else if (action === 'getBrands') {
       const db = await notion.databases.retrieve({ database_id: DATABASE_ID });
-      const brands = db.properties['브랜드명']?.multi_select?.options || [];
+      const brands = db.properties['브랜드명']?.select?.options || [];
       res.json({ brands });
 
-    } else if (action === 'addReaction') {
-      // 반응은 Notion에 저장하지 않고 브라우저 로컬에 저장 (아래 설명 참고)
-      res.json({ ok: true });
+    } else {
+      res.status(400).json({ error: 'Unknown action' });
     }
 
   } catch (error) {
