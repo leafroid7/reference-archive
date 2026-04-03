@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경쟁사 소재 레퍼런스</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f5f5f5; color: #333; }
+    
+    .header { background: white; padding: 20px 32px; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+    .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+    
+    .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .filter-select, .filter-date { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; }
+    .filter-btn { padding: 8px 16px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .filter-btn:hover { background: #555; }
+    .reset-btn { padding: 8px 16px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 14px; }
+
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 24px 32px; }
+    
+    .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    
+    .card-media { width: 100%; aspect-ratio: 16/9; background: #f0f0f0; overflow: hidden; position: relative; }
+    .card-media img { width: 100%; height: 100%; object-fit: cover; }
+    .card-media iframe { width: 100%; height: 100%; border: none; }
+    .card-media .no-media { display: flex; align-items: center; justify-content: center; height: 100%; color: #bbb; font-size: 14px; }
+    
+    .card-body { padding: 16px; }
+    .card-brand { display: inline-block; background: #f0f0f0; color: #555; font-size: 12px; padding: 3px 8px; border-radius: 20px; margin-bottom: 8px; }
+    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; line-height: 1.4; }
+    .card-date { font-size: 12px; color: #aaa; margin-bottom: 10px; }
+    .card-insight { font-size: 13px; color: #666; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    
+    .card-reactions { padding: 10px 16px; border-top: 1px solid #f0f0f0; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .reaction-btn { display: flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid #eee; border-radius: 20px; background: white; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+    .reaction-btn:hover, .reaction-btn.active { background: #fff3f3; border-color: #ffb3b3; }
+    .reaction-count { font-size: 12px; color: #888; }
+    .add-reaction-btn { padding: 4px 10px; border: 1px dashed #ddd; border-radius: 20px; background: white; cursor: pointer; font-size: 16px; color: #aaa; }
+    
+    .emoji-picker { display: none; position: absolute; background: white; border: 1px solid #eee; border-radius: 12px; padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 200; flex-wrap: wrap; gap: 6px; width: 220px; }
+    .emoji-picker.show { display: flex; }
+    .emoji-option { font-size: 20px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+    .emoji-option:hover { background: #f5f5f5; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 16px; width: 90%; max-width: 640px; max-height: 85vh; overflow-y: auto; }
+    .modal-media { width: 100%; aspect-ratio: 16/9; background: #000; }
+    .modal-media img { width: 100%; height: 100%; object-fit: contain; }
+    .modal-media iframe { width: 100%; height: 100%; border: none; }
+    .modal-body { padding: 24px; }
+    .modal-close { position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; color: white; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+    .modal-label { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 16px; margin-bottom: 4px; }
+    .modal-value { font-size: 14px; color: #333; line-height: 1.6; }
+    
+    .loading { text-align: center; padding: 60px; color: #aaa; }
+    .error { text-align: center; padding: 40px; color: #e55; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📂 경쟁사 소재 레퍼런스</h1>
+  <div class="filters">
+    <select class="filter-select" id="brandFilter">
+      <option value="">전체 브랜드</option>
+    </select>
+    <input type="date" class="filter-date" id="dateStart" placeholder="시작일">
+    <span style="color:#aaa;font-size:13px;">~</span>
+    <input type="date" class="filter-date" id="dateEnd" placeholder="종료일">
+    <button class="filter-btn" onclick="applyFilters()">필터 적용</button>
+    <button class="reset-btn" onclick="resetFilters()">초기화</button>
+  </div>
+</div>
+
+<div class="gallery" id="gallery">
+  <div class="loading">로딩 중...</div>
+</div>
+
+<!-- 모달 -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div style="position:relative; width:90%; max-width:640px;">
+    <span class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('show')">✕</span>
+    <div class="modal" id="modal">
+      <div class="modal-media" id="modalMedia"></div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 이모지 피커 -->
+<div class="emoji-picker" id="emojiPicker">
+  😍 🔥 💡 📌 😮 🎯 👀 💎 🙌 ✨ 📊 💬
+  .split(' ').map 이 부분은 JS로 처리
+</div>
+
+<script>
+const API_BASE = '/api/notion';
+const DEFAULT_REACTIONS = ['❤️', '👍', '👏', '🔥', '💡'];
+const EXTRA_EMOJIS = ['😍', '🎯', '👀', '💎', '🙌', '✨', '📊', '😮', '📌', '💬'];
+
+let allPages = [];
+let reactionData = JSON.parse(localStorage.getItem('reactions') || '{}');
+
+// 저장
+function saveReactions() {
+  localStorage.setItem('reactions', JSON.stringify(reactionData));
+}
+
+// 이모지 피커 닫기
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.add-reaction-btn') && !e.target.closest('#emojiPicker')) {
+    document.getElementById('emojiPicker').classList.remove('show');
+  }
+});
+
+// 브랜드 목록 로드
+async function loadBrands() {
+  try {
+    const res = await fetch(`${API_BASE}?action=getBrands`);
+    const data = await res.json();
+    const sel = document.getElementById('brandFilter');
+    data.brands.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.name;
+      opt.textContent = b.name;
+      sel.appendChild(opt);
+    });
+  } catch (e) { console.error(e); }
+}
+
+// 페이지 로드
+async function loadPages(brandFilter = '', dateStart = '', dateEnd = '') {
+  document.getElementById('gallery').innerHTML = '<div class="loading">로딩 중...</div>';
+  try {
+    let url = `${API_BASE}?action=getPages`;
+    if (brandFilter) url += `&filter_brand=${encodeURIComponent(brandFilter)}`;
+    if (dateStart) url += `&filter_date_start=${dateStart}`;
+    if (dateEnd) url += `&filter_date_end=${dateEnd}`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    allPages = data.pages;
+    renderGallery(allPages);
+  } catch (e) {
+    document.getElementById('gallery').innerHTML = `<div class="error">데이터 로드 실패: ${e.message}</div>`;
+  }
+}
+
+// YouTube URL 감지 및 임베드 변환
+function getYouTubeId(url) {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
+
+// 미디어 블록 추출
+function extractMedia(blocks) {
+  for (const block of blocks) {
+    if (block.type === 'image') {
+      const url = block.image?.file?.url || block.image?.external?.url;
+      if (url) return { type: 'image', url };
+    }
+    if (block.type === 'video') {
+      const url = block.video?.file?.url || block.video?.external?.url;
+      if (url) return { type: 'video', url };
+    }
+    if (block.type === 'embed') {
+      const url = block.embed?.url || '';
+      const ytId = getYouTubeId(url);
+      if (ytId) return { type: 'youtube', id: ytId };
+    }
+    if (block.type === 'paragraph') {
+      const text = block.paragraph?.rich_text?.map(t => t.plain_text).join('') || '';
+      const ytId = getYouTubeId(text);
+      if (ytId) return { type: 'youtube', id: ytId };
+    }
+  }
+  return null;
+}
+
+// 미디어 HTML 생성
+function buildMediaHTML(media, lazy = true) {
+  if (!media) return '<div class="no-media">미디어 없음</div>';
+  if (media.type === 'image') return `<img src="${media.url}" loading="${lazy ? 'lazy' : 'eager'}" alt="">`;
+  if (media.type === 'youtube') return `<iframe src="https://www.youtube.com/embed/${media.id}" allowfullscreen></iframe>`;
+  if (media.type === 'video') return `<video src="${media.url}" controls style="width:100%;height:100%"></video>`;
+  return '<div class="no-media">미디어 없음</div>';
+}
+
+// 반응 렌더
+function buildReactionHTML(pageId) {
+  const pageReactions = reactionData[pageId] || {};
+  let html = DEFAULT_REACTIONS.map(emoji => {
+    const count = pageReactions[emoji] || 0;
+    const active = pageReactions[`_user_${emoji}`] ? 'active' : '';
+    return `<button class="reaction-btn ${active}" onclick="toggleReaction(event, '${pageId}', '${emoji}')">${emoji} <span class="reaction-count">${count || ''}</span></button>`;
+  }).join('');
+  html += `<button class="add-reaction-btn" onclick="openEmojiPicker(event, '${pageId}')">+</button>`;
+  return html;
+}
+
+// 반응 토글
+function toggleReaction(e, pageId, emoji) {
+  e.stopPropagation();
+  if (!reactionData[pageId]) reactionData[pageId] = {};
+  const userKey = `_user_${emoji}`;
+  const hasReacted = reactionData[pageId][userKey];
+  reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (hasReacted ? -1 : 1);
+  if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
+  reactionData[pageId][userKey] = !hasReacted;
+  saveReactions();
+  // 해당 카드 반응 영역만 업데이트
+  const card = e.target.closest('.card');
+  if (card) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
+}
+
+// 이모지 피커 열기
+function openEmojiPicker(e, pageId) {
+  e.stopPropagation();
+  const picker = document.getElementById('emojiPicker');
+  picker.innerHTML = EXTRA_EMOJIS.map(em => 
+    `<span class="emoji-option" onclick="addCustomReaction('${pageId}', '${em}')">${em}</span>`
+  ).join('');
+  picker.dataset.pageId = pageId;
+  picker.classList.toggle('show');
+  const rect = e.target.getBoundingClientRect();
+  picker.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  picker.style.left = rect.left + 'px';
+  picker.style.position = 'absolute';
+  document.body.appendChild(picker);
+}
+
+function addCustomReaction(pageId, emoji) {
+  document.getElementById('emojiPicker').classList.remove('show');
+  toggleReaction({ stopPropagation: () => {}, target: document.querySelector(`[data-page-id="${pageId}"]`) || document.body }, pageId, emoji);
+  // 해당 카드 재렌더
+  document.querySelectorAll('.card').forEach(card => {
+    if (card.dataset.pageId === pageId) {
+      card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
+    }
+  });
+}
+
+// 갤러리 렌더
+function renderGallery(pages) {
+  const gallery = document.getElementById('gallery');
+  if (!pages.length) { gallery.innerHTML = '<div class="loading">결과 없음</div>'; return; }
+  
+  gallery.innerHTML = pages.map(page => {
+    const props = page.properties;
+    const title = props['제목']?.title?.map(t => t.plain_text).join('') || '(제목 없음)';
+    const brands = props['브랜드명']?.multi_select?.map(b => b.name) || [];
+    const date = props['날짜']?.date?.start || '';
+    const insight = props['인사이트']?.rich_text?.map(t => t.plain_text).join('') || '';
+    const media = extractMedia(page.blocks || []);
+    
+    return `
+      <div class="card" data-page-id="${page.id}" onclick="openModal('${page.id}')">
+        <div class="card-media">${buildMediaHTML(media)}</div>
+        <div class="card-body">
+          ${brands.map(b => `<span class="card-brand">${b}</span>`).join(' ')}
+          <div class="card-title">${title}</div>
+          <div class="card-date">${date}</div>
+          <div class="card-insight">${insight}</div>
+        </div>
+        <div class="card-reactions">${buildReactionHTML(page.id)}</div>
+      </div>`;
+  }).join('');
+}
+
+// 모달 열기
+function openModal(pageId) {
+  const page = allPages.find(p => p.id === pageId);
+  if (!page) return;
+  const props = page.properties;
+  const title = props['제목']?.title?.map(t => t.plain_text).join('') || '';
+  const brands = props['브랜드명']?.multi_select?.map(b => b.name).join(', ') || '';
+  const date = props['날짜']?.date?.start || '';
+  const message = props['메시지']?.rich_text?.map(t => t.plain_text).join('') || '';
+  const insight = props['인사이트']?.rich_text?.map(t => t.plain_text).join('') || '';
+  const basis = props['분석 근거']?.rich_text?.map(t => t.plain_text).join('') || '';
+  const media = extractMedia(page.blocks || []);
+
+  document.getElementById('modalMedia').innerHTML = buildMediaHTML(media, false);
+  document.getElementById('modalBody').innerHTML = `
+    <div style="margin-bottom:4px"><span style="font-size:13px;color:#aaa">${brands}</span></div>
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">${title}</h2>
+    <div style="font-size:13px;color:#aaa;margin-bottom:16px">${date}</div>
+    ${message ? `<div class="modal-label">핵심 메시지</div><div class="modal-value">${message}</div>` : ''}
+    ${insight ? `<div class="modal-label">인사이트</div><div class="modal-value">${insight}</div>` : ''}
+    ${basis ? `<div class="modal-label">분석 근거</div><div class="modal-value">${basis}</div>` : ''}
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+}
+
+function applyFilters() {
+  const brand = document.getElementById('brandFilter').value;
+  const dateStart = document.getElementById('dateStart').value;
+  const dateEnd = document.getElementById('dateEnd').value;
+  loadPages(brand, dateStart, dateEnd);
+}
+
+function resetFilters() {
+  document.getElementById('brandFilter').value = '';
+  document.getElementById('dateStart').value = '';
+  document.getElementById('dateEnd').value = '';
+  loadPages();
+}
+
+// 초기 로드
+loadBrands();
+loadPages();
+</script>
+</body>
+</html>
