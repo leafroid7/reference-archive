@@ -243,6 +243,10 @@
     .media-url-add:hover { border-color: #bbb; color: #777; }
 
     .loading { text-align: center; padding: 60px; color: #aaa; grid-column: 1/-1; }
+    .load-more-wrap { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; padding: 12px 0 32px; gap: 6px; }
+    .load-more-btn { padding: 10px 24px; background: white; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 13px; color: #555; transition: all 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .load-more-btn:hover { background: #f5f5f5; border-color: #bbb; }
+    .load-more-count { font-size: 11px; color: #bbb; }
     .error { text-align: center; padding: 40px; color: #e55; grid-column: 1/-1; }
   </style>
 </head>
@@ -250,7 +254,7 @@
 
 <div class="header">
   <div class="header-top">
-    <h1>📋 H&B 케이스 스터디</h1>
+    <h1>🗃️ H&B 케이스 스터디</h1>
     <button class="edit-mode-btn" id="editModeBtn">✏️ 편집 모드</button>
   </div>
   <div class="filters">
@@ -587,23 +591,45 @@ function toggleCopyType(ct) {
   renderCopyTypeButtons([...selectedCopyTypes]);
 }
 
+let nextCursor = null;
+let hasMore = false;
+let currentFilters = { brand: '', dateStart: '', dateEnd: '' };
+const PAGE_SIZE = 20;
+
 async function loadPages(brandFilter='', dateStart='', dateEnd='') {
+  currentFilters = { brand: brandFilter, dateStart, dateEnd };
+  nextCursor = null;
+  allPages = [];
   document.getElementById('gallery').innerHTML = '<div class="loading">로딩 중...</div>';
+  await fetchMorePages(true);
+}
+
+async function fetchMorePages(isFirst = false) {
   try {
-    let url = `${API_BASE}?action=getPages`;
-    if (brandFilter) url += `&filter_brand=${encodeURIComponent(brandFilter)}`;
-    if (dateStart) url += `&filter_date_start=${dateStart}`;
-    if (dateEnd) url += `&filter_date_end=${dateEnd}`;
+    let url = `${API_BASE}?action=getPages&page_size=${PAGE_SIZE}`;
+    if (currentFilters.brand) url += `&filter_brand=${encodeURIComponent(currentFilters.brand)}`;
+    if (currentFilters.dateStart) url += `&filter_date_start=${currentFilters.dateStart}`;
+    if (currentFilters.dateEnd) url += `&filter_date_end=${currentFilters.dateEnd}`;
+    if (nextCursor) url += `&start_cursor=${nextCursor}`;
+
     const res = await fetch(url);
     const data = await res.json();
-    allPages = (data.pages || []).map(p => ({ ...p, _id: p.id.replace(/-/g, '') }));
+    const newPages = (data.pages || []).map(p => ({ ...p, _id: p.id.replace(/-/g, '') }));
+
+    if (isFirst) allPages = newPages;
+    else allPages = [...allPages, ...newPages];
+
+    nextCursor = data.next_cursor || null;
+    hasMore = data.has_more || false;
+
     // 카피 유형 목록 동기화
-    const ctSet = new Set();
+    const ctSet = new Set(allCopyTypes);
     allPages.forEach(p => (p.properties['카피 유형']?.multi_select || []).forEach(t => ctSet.add(t.name)));
     allCopyTypes = [...ctSet];
-    renderGallery(allPages);
+
+    renderGallery(allPages, hasMore, newPages.length);
   } catch(e) {
-    document.getElementById('gallery').innerHTML = `<div class="error">데이터 로드 실패: ${e.message}</div>`;
+    if (isFirst) document.getElementById('gallery').innerHTML = `<div class="error">데이터 로드 실패: ${e.message}</div>`;
   }
 }
 
@@ -693,6 +719,16 @@ function renderRichText(richTextArr) {
     if (t.href) text = `<a href="${t.href}" target="_blank" style="color:#3b82f6;text-decoration:underline;">${text}</a>`;
     return text;
   }).join('');
+
+  // 더 불러오기 버튼
+  if (hasMore) {
+    gallery.innerHTML += `<div class="load-more-wrap">
+      <button class="load-more-btn" onclick="fetchMorePages()">↓ 20개 더 불러오기</button>
+      <span class="load-more-count">현재 ${pages.length}개 표시 중</span>
+    </div>`;
+  } else if (pages.length > PAGE_SIZE) {
+    gallery.innerHTML += `<div class="load-more-wrap"><span class="load-more-count">총 ${pages.length}개 모두 표시됨</span></div>`;
+  }
 }
 
 function extractBodyText(blocks) {
@@ -711,8 +747,10 @@ function extractBodyText(blocks) {
       lines.push(`<div class="block-heading block-heading-3">${getText(block, 'heading_3')}</div>`);
     } else if (type === 'bulleted_list_item') {
       lines.push(`<div class="block-bulleted">${getText(block, 'bulleted_list_item')}</div>`);
+      if (block.children?.length) lines.push(`<div style="padding-left:16px;">${extractBodyText(block.children)}</div>`);
     } else if (type === 'numbered_list_item') {
       lines.push(`<div class="block-numbered">${getText(block, 'numbered_list_item')}</div>`);
+      if (block.children?.length) lines.push(`<div style="padding-left:16px;">${extractBodyText(block.children)}</div>`);
     } else if (type === 'quote') {
       lines.push(`<div class="block-quote">${getText(block, 'quote')}</div>`);
     } else if (type === 'toggle') {
@@ -801,7 +839,7 @@ document.getElementById('emojiPicker').addEventListener('click', e => {
 });
 
 // ── 갤러리 렌더 ──────────────────────────────────────────
-function renderGallery(pages) {
+function renderGallery(pages, hasMore = false, newCount = pages.length) {
   const gallery = document.getElementById('gallery');
   if (!pages.length) { gallery.innerHTML = '<div class="loading">등록된 레퍼런스가 없습니다</div>'; return; }
   gallery.innerHTML = pages.map(page => {

@@ -36,14 +36,16 @@ module.exports = async (req, res) => {
       const response = await notion.databases.query({
         database_id: DATABASE_ID,
         filter: filters.length > 0 ? { and: filters } : undefined,
-        sorts: [{ property: '날짜', direction: 'descending' }]
+        sorts: [{ property: '날짜', direction: 'descending' }],
+        page_size: page_size ? parseInt(page_size) : 20,
+        ...(start_cursor ? { start_cursor } : {})
       });
 
       async function fetchBlocksRecursive(blockId) {
         const r = await notion.blocks.children.list({ block_id: blockId });
         const results = await Promise.all(
           r.results.map(async (block) => {
-            if (block.has_children && (block.type === 'column_list' || block.type === 'column' || block.type === 'toggle')) {
+            if (block.has_children && ['column_list','column','toggle','bulleted_list_item','numbered_list_item','quote','callout'].includes(block.type)) {
               block.children = await fetchBlocksRecursive(block.id);
             }
             return block;
@@ -59,7 +61,7 @@ module.exports = async (req, res) => {
         })
       );
 
-      res.json({ pages });
+      res.json({ pages, next_cursor: response.next_cursor, has_more: response.has_more });
 
     } else if (action === 'createPage') {
       const body = await new Promise((resolve) => {
