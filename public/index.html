@@ -9,8 +9,11 @@
     body { font-family: -apple-system, 'Apple SD Gothic Neo', 'Pretendard', sans-serif; background: #f5f5f5; color: #333; }
 
     /* 헤더 */
-    .header { background: white; padding: 20px 32px; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
-    .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+    .header { background: white; padding: 16px 32px; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .edit-mode-btn { padding: 6px 14px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .edit-mode-btn.active { background: #fff8ec; color: #d97706; border-color: #f5c06a; font-weight: 600; }
     .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .filter-select, .filter-date { padding: 7px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; }
     .filter-btn { padding: 7px 14px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
@@ -23,12 +26,13 @@
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 24px 32px; align-items: start; }
 
     /* 카드 */
-    .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+    .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; position: relative; }
     .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-    .card-media { width: 100%; background: #f0f0f0; overflow: hidden; aspect-ratio: 4/3; position: relative; }
-    .card-media img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
-    .card-media iframe { width: 100%; height: 100%; border: none; display: block; }
-    .card-media .no-media { display: flex; align-items: center; justify-content: center; height: 100%; color: #bbb; font-size: 14px; }
+    .card-media { width: 100%; background: #111; overflow: hidden; aspect-ratio: 4/3; position: relative; }
+    .card-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .card-media .video-thumb { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #111; }
+    .card-media .video-thumb .play-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .card-media .no-media { display: flex; align-items: center; justify-content: center; height: 100%; color: #bbb; font-size: 14px; background: #f0f0f0; }
     .card-body { padding: 14px 16px; }
     .badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 8px; }
     .badge-divider { width: 1px; height: 14px; background: #ddd; margin: 0 2px; }
@@ -36,7 +40,7 @@
     .card-type { background: #e8f4ff; color: #3b82f6; font-size: 11px; padding: 2px 8px; border-radius: 20px; }
     .card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
     .card-date { font-size: 11px; color: #bbb; margin-bottom: 8px; }
-    .card-overview-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 3px; letter-spacing: 0.3px; }
+    .card-overview-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 3px; }
     .card-overview { font-size: 13px; color: #555; line-height: 1.5; }
     .card-tags { padding: 6px 16px 10px; display: flex; flex-wrap: wrap; gap: 4px; }
     .tag { font-size: 11px; color: #888; background: #f5f5f5; padding: 2px 8px; border-radius: 20px; }
@@ -58,51 +62,35 @@
 
     /* 모달 본체 */
     .modal-wrap { position: relative; width: 100%; max-width: 960px; }
-    .modal-close { position: absolute; top: 14px; right: 14px; font-size: 16px; cursor: pointer; color: #888; z-index: 10; line-height: 1; background: #f0f0f0; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
-    .modal-close:hover { background: #e0e0e0; color: #333; }
     .modal { background: white; border-radius: 16px; overflow: hidden; display: flex; max-height: 85vh; }
 
     /* 모달 좌측: 캐러셀 */
     .modal-left { flex: 0 0 55%; background: #111; position: relative; display: flex; flex-direction: column; min-height: 340px; }
     .carousel { flex: 1; overflow: hidden; position: relative; min-height: 200px; }
-    .carousel-track { display: flex; height: 100%; transition: transform 0.3s ease; will-change: transform; }
-    .carousel-slide { flex: 0 0 100%; width: 100%; display: flex; align-items: center; justify-content: center; background: #111; }
+    .carousel-track { display: flex; height: 100%; transition: transform 0.3s ease; }
+    .carousel-slide { flex: 0 0 100%; display: flex; align-items: center; justify-content: center; background: #111; }
     .carousel-slide img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; display: block; }
     .carousel-slide iframe { width: 100%; aspect-ratio: 16/9; border: none; }
     .carousel-slide video { max-width: 100%; max-height: 100%; }
     .carousel-slide .no-media { color: #555; font-size: 14px; }
-
-    /* 캐러셀 버튼 — 항상 DOM에 존재, show/hide로 제어 */
-    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s, transform 0.2s; user-select: none; }
+    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s, transform 0.2s; }
     .carousel-btn:hover { background: rgba(255,255,255,0.85); color: #111; transform: translateY(-50%) scale(1.12); }
     .carousel-btn.prev { left: 10px; }
     .carousel-btn.next { right: 10px; }
     .carousel-btn.hidden { display: none; }
-
     .carousel-footer { background: #111; padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
     .carousel-counter { color: rgba(255,255,255,0.6); font-size: 11px; }
     .carousel-dots { display: flex; gap: 6px; }
     .carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.2s; border: none; padding: 0; }
     .carousel-dot.active { background: white; }
 
-    /* 이미지 확대 */
-    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; overflow-y: auto; }
-    .lightbox.show { display: block !important; }
-    .lightbox-inner { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 64px 24px; box-sizing: border-box; }
-    .lightbox img { border-radius: 4px; display: block; cursor: default; transition: width 0.2s, max-width 0.2s; }
-    .lightbox img.fit-screen { max-width: min(96vw, 96vh * 2); max-height: 88vh; width: auto; height: auto; object-fit: contain; }
-    .lightbox img.zoom-original { max-width: none; width: auto; height: auto; }
-    .lightbox img.zoom-in { max-width: none; width: 150%; height: auto; }
-    .lightbox-close { position: fixed; top: 14px; right: 18px; color: white; font-size: 18px; cursor: pointer; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 100000; }
-    .lightbox-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100000; }
-    .lightbox-ctrl-btn { padding: 7px 14px; background: rgba(120,100,200,0.45); color: white; border: 1px solid rgba(160,140,220,0.5); border-radius: 20px; cursor: pointer; font-size: 12px; backdrop-filter: blur(6px); transition: background 0.15s; white-space: nowrap; }
-    .lightbox-ctrl-btn:hover { background: rgba(120,100,200,0.72); }
-    .lightbox-ctrl-btn.active { background: rgba(110,85,200,0.9); color: white; border-color: rgba(160,140,255,0.8); }
-
     /* 모달 우측 */
-    .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; }
-    .modal-badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 10px; padding-right: 40px; }
-    .modal-badge-divider { width: 1px; height: 14px; background: #ddd; margin: 0 2px; }
+    .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; position: relative; }
+    .modal-close { position: absolute; top: 14px; right: 14px; font-size: 14px; cursor: pointer; color: #999; background: #f0f0f0; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; z-index: 5; }
+    .modal-close:hover { background: #e0e0e0; color: #333; }
+    .modal-badge-row { margin-bottom: 12px; padding-right: 36px; }
+    .modal-badge-group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; }
+    .modal-badge-label { font-size: 11px; color: #aaa; font-weight: 600; margin-right: 4px; }
     .modal-title { font-size: 17px; font-weight: 700; line-height: 1.4; margin-bottom: 4px; }
     .modal-date { font-size: 12px; color: #bbb; margin-bottom: 16px; }
     .modal-overview-label { font-size: 11px; color: #aaa; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 5px; }
@@ -110,16 +98,62 @@
     .modal-source { margin-bottom: 14px; }
     .modal-source a { font-size: 13px; color: #3b82f6; word-break: break-all; text-decoration: none; }
     .modal-source a:hover { text-decoration: underline; }
+    .modal-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 16px; }
 
     /* 토글 */
     .toggle-section { border: 1px solid #eee; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
     .toggle-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; background: #fafafa; font-size: 13px; font-weight: 600; color: #444; user-select: none; border: none; width: 100%; text-align: left; }
     .toggle-header:hover { background: #f0f0f0; }
-    .toggle-arrow { font-size: 10px; color: #aaa; transition: transform 0.2s; display: inline-block; }
+    .toggle-arrow { font-size: 10px; color: #aaa; transition: transform 0.2s; }
     .toggle-arrow.open { transform: rotate(180deg); }
     .toggle-body { padding: 12px 16px; font-size: 13px; color: #555; line-height: 1.7; display: none; }
     .toggle-body.open { display: block; }
-    .modal-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 16px; }
+
+    /* 본문 텍스트 블록 */
+    .block-text { white-space: pre-wrap; margin-bottom: 4px; }
+    .block-heading { font-weight: 700; margin: 8px 0 4px; }
+    .block-heading-1 { font-size: 15px; }
+    .block-heading-2 { font-size: 14px; }
+    .block-heading-3 { font-size: 13px; }
+    .block-bulleted { padding-left: 14px; position: relative; margin-bottom: 3px; }
+    .block-bulleted::before { content: "•"; position: absolute; left: 4px; color: #aaa; }
+    .block-quote { border-left: 3px solid #eee; padding-left: 10px; color: #777; font-style: italic; margin: 4px 0; }
+
+    /* 편집 모드 - 인라인 편집 */
+    .field-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
+    .field-edit-btn { flex-shrink: 0; background: none; border: none; cursor: pointer; font-size: 13px; color: #ccc; padding: 2px 4px; border-radius: 4px; transition: color 0.15s; }
+    .field-edit-btn:hover { color: #888; }
+    .inline-edit-wrap { margin-bottom: 12px; }
+    .inline-edit-wrap textarea, .inline-edit-wrap input { width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; padding: 8px 10px; font-size: 14px; font-family: inherit; resize: vertical; background: #fafafa; }
+    .inline-edit-wrap textarea:focus, .inline-edit-wrap input:focus { outline: none; border-color: #aaa; background: white; }
+    .inline-edit-actions { display: flex; gap: 6px; margin-top: 6px; }
+    .inline-save-btn { padding: 5px 14px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    .inline-cancel-btn { padding: 5px 10px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+    /* 잠금 해제 모달 */
+    .unlock-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; align-items: center; justify-content: center; }
+    .unlock-overlay.show { display: flex !important; }
+    .unlock-modal { background: white; border-radius: 16px; padding: 28px; width: 300px; text-align: center; }
+    .unlock-modal h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .unlock-modal p { font-size: 13px; color: #888; margin-bottom: 16px; }
+    .unlock-input { width: 100%; border: 1px solid #eee; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 10px; box-sizing: border-box; text-align: center; letter-spacing: 2px; }
+    .unlock-input:focus { outline: none; border-color: #aaa; }
+    .unlock-btn { width: 100%; padding: 10px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .unlock-error { font-size: 12px; color: #e55; margin-top: 8px; display: none; }
+
+    /* 이미지 확대 */
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; overflow-y: auto; }
+    .lightbox.show { display: block !important; }
+    .lightbox-inner { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 64px 24px; box-sizing: border-box; }
+    .lightbox img { border-radius: 4px; display: block; transition: width 0.2s; }
+    .lightbox img.fit-screen { max-width: min(96vw, 1200px); max-height: 88vh; width: auto; height: auto; object-fit: contain; }
+    .lightbox img.zoom-original { max-width: none; width: auto; height: auto; }
+    .lightbox img.zoom-in { max-width: none; width: 150%; height: auto; }
+    .lightbox-close { position: fixed; top: 14px; right: 18px; color: white; font-size: 18px; cursor: pointer; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 100000; }
+    .lightbox-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100000; }
+    .lightbox-ctrl-btn { padding: 7px 14px; background: rgba(120,100,200,0.45); color: white; border: 1px solid rgba(160,140,220,0.5); border-radius: 20px; cursor: pointer; font-size: 12px; backdrop-filter: blur(6px); transition: background 0.15s; white-space: nowrap; }
+    .lightbox-ctrl-btn:hover { background: rgba(120,100,200,0.72); }
+    .lightbox-ctrl-btn.active { background: rgba(110,85,200,0.9); border-color: rgba(160,140,255,0.8); }
 
     /* 반응형 */
     @media (max-width: 700px) {
@@ -128,7 +162,7 @@
       .modal-right { flex: 1; overflow-y: auto; padding: 16px; min-height: 0; }
       .carousel { height: 100%; }
       .gallery { padding: 16px; gap: 14px; }
-      .header { padding: 16px; }
+      .header { padding: 12px 16px; }
     }
 
     .loading { text-align: center; padding: 60px; color: #aaa; grid-column: 1/-1; }
@@ -138,7 +172,10 @@
 <body>
 
 <div class="header">
-  <h1>🗂 H&B 케이스 스터디</h1>
+  <div class="header-top">
+    <h1>🗂 H&B 케이스 스터디</h1>
+    <button class="edit-mode-btn" id="editModeBtn">✏️ 편집 모드</button>
+  </div>
   <div class="filters">
     <select class="filter-select" id="brandFilter">
       <option value="">전체 브랜드</option>
@@ -149,10 +186,8 @@
     <button class="filter-month-btn" onclick="applyMonthFilter()">최근 1개월</button>
     <button class="filter-btn" onclick="applyFilters()">필터 적용</button>
     <button class="reset-btn" onclick="resetFilters()">초기화</button>
-    <button class="edit-mode-btn" id="editModeBtn">🔒 편집 모드</button>
   </div>
 </div>
-<div class="edit-mode-indicator" id="editIndicator">✏️ 편집 모드 활성화 — 카드 위에 마우스를 올리면 편집 버튼이 나타납니다</div>
 
 <div class="gallery" id="gallery">
   <div class="loading">로딩 중...</div>
@@ -173,9 +208,7 @@
           <div class="carousel-dots" id="carouselDots"></div>
         </div>
       </div>
-      <div class="modal-right" id="modalRight" style="position:relative;">
-        <button class="modal-close" id="modalCloseBtn">✕</button>
-      </div>
+      <div class="modal-right" id="modalRight"></div>
     </div>
   </div>
 </div>
@@ -185,28 +218,9 @@
   <div class="unlock-modal">
     <h3>🔐 편집 모드</h3>
     <p>편집 코드를 입력하세요</p>
-    <input class="unlock-input" id="unlockInput" type="password" placeholder="편집 코드">
+    <input class="unlock-input" id="unlockInput" type="password" placeholder="••••••">
     <button class="unlock-btn" id="unlockSubmit">확인</button>
     <div class="unlock-error" id="unlockError">코드가 올바르지 않습니다</div>
-  </div>
-</div>
-
-<!-- 카드 편집 모달 -->
-<div class="edit-overlay" id="editOverlay">
-  <div class="edit-modal">
-    <h3>✏️ 카드 편집</h3>
-    <div class="edit-field"><label>콘텐츠 (제목)</label><input id="ef-title" type="text"></div>
-    <div class="edit-field"><label>브랜드명</label><input id="ef-brand" type="text"></div>
-    <div class="edit-field"><label>날짜</label><input id="ef-date" type="date"></div>
-    <div class="edit-field"><label>브랜드 개요</label><textarea id="ef-overview"></textarea></div>
-    <div class="edit-field"><label>주목할 캠페인/콘텐츠</label><textarea id="ef-campaign"></textarea></div>
-    <div class="edit-field"><label>적용해 볼 아이디어</label><textarea id="ef-idea"></textarea></div>
-    <div class="edit-field"><label>인사이트 (내가 배운 것)</label><textarea id="ef-insight"></textarea></div>
-    <div class="edit-field"><label>출처 URL</label><input id="ef-url" type="text"></div>
-    <div class="edit-actions">
-      <button class="edit-cancel-btn" id="editCancelBtn">취소</button>
-      <button class="edit-save-btn" id="editSaveBtn">저장</button>
-    </div>
   </div>
 </div>
 
@@ -230,61 +244,105 @@
 const API_BASE = '/api/notion';
 const DEFAULT_REACTIONS = ['❤️', '👍', '👏', '🔥', '💡'];
 const EXTRA_EMOJIS = ['😍', '🎯', '👀', '💎', '🙌', '✨', '📊', '😮', '📌', '💬'];
+const EDIT_CODE = 'underdogvibe2024';
 
 let allPages = [];
 let reactionData = JSON.parse(localStorage.getItem('reactions') || '{}');
 let carouselIndex = 0;
 let carouselItems = [];
 let touchStartX = 0;
-let touchEndX = 0;
+let isEditMode = false;
+let currentModalPageId = null;
 
 function saveReactions() { localStorage.setItem('reactions', JSON.stringify(reactionData)); }
 
+// ── 편집 모드 ──────────────────────────────────────────
+function activateEditMode() {
+  isEditMode = true;
+  const btn = document.getElementById('editModeBtn');
+  btn.textContent = '📖 읽기 모드';
+  btn.classList.add('active');
+  renderGallery(allPages);
+  if (currentModalPageId) openModal(currentModalPageId);
+}
+
+function deactivateEditMode() {
+  isEditMode = false;
+  const btn = document.getElementById('editModeBtn');
+  btn.textContent = '✏️ 편집 모드';
+  btn.classList.remove('active');
+  renderGallery(allPages);
+  if (currentModalPageId) openModal(currentModalPageId);
+}
+
+document.getElementById('editModeBtn').addEventListener('click', () => {
+  if (isEditMode) { deactivateEditMode(); return; }
+  const overlay = document.getElementById('unlockOverlay');
+  overlay.classList.add('show');
+  document.getElementById('unlockInput').value = '';
+  document.getElementById('unlockError').style.display = 'none';
+  setTimeout(() => document.getElementById('unlockInput').focus(), 100);
+});
+
+document.getElementById('unlockOverlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('unlockOverlay'))
+    document.getElementById('unlockOverlay').classList.remove('show');
+});
+
+document.getElementById('unlockSubmit').addEventListener('click', () => {
+  if (document.getElementById('unlockInput').value.trim() === EDIT_CODE) {
+    document.getElementById('unlockOverlay').classList.remove('show');
+    activateEditMode();
+  } else {
+    document.getElementById('unlockError').style.display = 'block';
+  }
+});
+
+document.getElementById('unlockInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('unlockSubmit').click();
+});
+
 // ── 이벤트 바인딩 ──────────────────────────────────────────
-// 모달 닫기
 document.getElementById('modalOverlay').addEventListener('click', (e) => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
-document.getElementById('modalOverlay').style.display = 'none';
 
-// 캐러셀 버튼
 document.getElementById('prevBtn').addEventListener('click', () => moveCarousel(-1));
 document.getElementById('nextBtn').addEventListener('click', () => moveCarousel(1));
 
-// 캐러셀 터치 스와이프
-const carousel = document.getElementById('carousel');
-carousel.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
-carousel.addEventListener('touchend', (e) => {
-  touchEndX = e.changedTouches[0].screenX;
-  const diff = touchStartX - touchEndX;
+// 캐러셀 터치
+const carouselEl = document.getElementById('carousel');
+carouselEl.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+carouselEl.addEventListener('touchend', e => {
+  const diff = touchStartX - e.changedTouches[0].screenX;
   if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
 });
 
-// 캐러셀 마우스 드래그 스와이프 (PC) - document 레벨 위임
-let mouseStartX = 0;
-let isDragging = false;
-document.addEventListener('mousedown', (e) => {
+// 캐러셀 마우스 드래그
+let mouseStartX = 0, isDragging = false;
+document.addEventListener('mousedown', e => {
   if (e.target.closest('#carousel')) { mouseStartX = e.clientX; isDragging = true; }
 });
-document.addEventListener('mouseup', (e) => {
+document.addEventListener('mouseup', e => {
   if (!isDragging) return;
   isDragging = false;
   const diff = mouseStartX - e.clientX;
   if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
 });
-document.addEventListener('mouseleave', () => { isDragging = false; });
 
 // 라이트박스
-document.getElementById('lightbox').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('lightbox') || e.target.classList.contains('lightbox-inner')) closeLightbox();
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox') || e.target.closest('.lightbox-inner') === document.getElementById('lightbox').querySelector('.lightbox-inner') && e.target.tagName !== 'IMG') closeLightbox();
 });
 document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+document.getElementById('lbFit').addEventListener('click', e => { e.stopPropagation(); setLightboxZoom('fit'); });
+document.getElementById('lbOriginal').addEventListener('click', e => { e.stopPropagation(); setLightboxZoom('original'); });
+document.getElementById('lbZoomIn').addEventListener('click', e => { e.stopPropagation(); setLightboxZoom('zoomin'); });
 
 // 이모지 피커 닫기
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.add-reaction-btn') && !e.target.closest('#emojiPicker')) {
+document.addEventListener('click', e => {
+  if (!e.target.closest('.add-reaction-btn') && !e.target.closest('#emojiPicker'))
     document.getElementById('emojiPicker').classList.remove('show');
-  }
 });
 
 // ── 데이터 로드 ──────────────────────────────────────────
@@ -337,12 +395,15 @@ function extractAllMedia(blocks) {
       const ytId = getYouTubeId(url);
       if (ytId) items.push({ type: 'youtube', id: ytId });
       else if (url) items.push({ type: 'embed', url });
+    } else if (block.type === 'video') {
+      const url = block.video?.external?.url || '';
+      const ytId = getYouTubeId(url);
+      if (ytId) items.push({ type: 'youtube', id: ytId });
     } else if (block.type === 'paragraph') {
       const text = block.paragraph?.rich_text?.map(t => t.plain_text).join('') || '';
       const ytId = getYouTubeId(text);
       if (ytId) items.push({ type: 'youtube', id: ytId });
     } else if (block.type === 'column_list' || block.type === 'column') {
-      // 2열 배치 블록 안의 미디어도 재귀 추출
       if (block.children?.length) items.push(...extractAllMedia(block.children));
     }
   }
@@ -353,13 +414,42 @@ function extractFirstMedia(blocks) {
   return extractAllMedia(blocks)[0] || null;
 }
 
+// 카드 썸네일용 - 영상은 플레이 아이콘으로 표시
 function buildCardMediaHTML(media) {
   if (!media) return '<div class="no-media">미디어 없음</div>';
   if (media.type === 'image') return `<img src="${media.url}" loading="lazy" alt="">`;
-  if (media.type === 'youtube') return `<div style="position:relative;"><iframe src="https://www.youtube.com/embed/${media.id}" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;display:block;"></iframe><div style="position:absolute;inset:0;cursor:pointer;"></div></div>`;
-  if (media.type === 'video') return `<div style="position:relative;"><video src="${media.url}" controls style="width:100%"></video><div style="position:absolute;inset:0;cursor:pointer;"></div></div>`;
-  if (media.type === 'embed') return `<div style="position:relative;"><iframe src="${media.url}" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;display:block;"></iframe><div style="position:absolute;inset:0;cursor:pointer;"></div></div>`;
+  if (media.type === 'youtube') return `<div class="video-thumb"><div class="play-icon">▶</div></div>`;
+  if (media.type === 'video') return `<div class="video-thumb"><div class="play-icon">▶</div></div>`;
+  if (media.type === 'embed') return `<div class="video-thumb"><div class="play-icon">▶</div></div>`;
   return '<div class="no-media">미디어 없음</div>';
+}
+
+// ── 본문 텍스트 추출 ──────────────────────────────────────────
+function extractBodyText(blocks) {
+  const lines = [];
+  for (const block of blocks) {
+    const type = block.type;
+    const getText = (b, key) => b[key]?.rich_text?.map(t => t.plain_text).join('') || '';
+    if (type === 'paragraph') {
+      const t = getText(block, 'paragraph');
+      if (t) lines.push(`<div class="block-text">${t}</div>`);
+    } else if (type === 'heading_1') {
+      lines.push(`<div class="block-heading block-heading-1">${getText(block, 'heading_1')}</div>`);
+    } else if (type === 'heading_2') {
+      lines.push(`<div class="block-heading block-heading-2">${getText(block, 'heading_2')}</div>`);
+    } else if (type === 'heading_3') {
+      lines.push(`<div class="block-heading block-heading-3">${getText(block, 'heading_3')}</div>`);
+    } else if (type === 'bulleted_list_item') {
+      lines.push(`<div class="block-bulleted">${getText(block, 'bulleted_list_item')}</div>`);
+    } else if (type === 'numbered_list_item') {
+      lines.push(`<div class="block-numbered">${getText(block, 'numbered_list_item')}</div>`);
+    } else if (type === 'quote') {
+      lines.push(`<div class="block-quote">${getText(block, 'quote')}</div>`);
+    } else if (type === 'column_list' || type === 'column') {
+      if (block.children) lines.push(extractBodyText(block.children));
+    }
+  }
+  return lines.join('');
 }
 
 // ── 반응 이모지 ──────────────────────────────────────────
@@ -374,25 +464,23 @@ function buildReactionHTML(pageId) {
   return html;
 }
 
+// ── 갤러리 이벤트 ──────────────────────────────────────────
 document.getElementById('gallery').addEventListener('click', (e) => {
-  // 반응 버튼
   const rb = e.target.closest('.reaction-btn');
   if (rb) {
     e.stopPropagation();
-    const pageId = rb.dataset.page;
-    const emoji = rb.dataset.emoji;
+    const pageId = rb.dataset.page, emoji = rb.dataset.emoji;
     if (!reactionData[pageId]) reactionData[pageId] = {};
-    const uk = `_user_${emoji}`;
-    const had = reactionData[pageId][uk];
+    const uk = `_user_${emoji}`, had = reactionData[pageId][uk];
     reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (had ? -1 : 1);
     if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
     reactionData[pageId][uk] = !had;
     saveReactions();
+    rb.closest('.card')?.querySelector('.card-reactions')?.setOf?.();
     const card = rb.closest('.card');
     if (card) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
     return;
   }
-  // 이모지 추가 버튼
   const ab = e.target.closest('.add-reaction-btn');
   if (ab) {
     e.stopPropagation();
@@ -407,23 +495,21 @@ document.getElementById('gallery').addEventListener('click', (e) => {
     picker.classList.toggle('show');
     return;
   }
-  // 카드 이미지 클릭 → 라이트박스
+  // 카드 이미지 클릭 → 라이트박스 (이미지만)
   const cardImg = e.target.closest('.card-media img');
   if (cardImg) { e.stopPropagation(); openLightbox(cardImg.src); return; }
-  // 카드 클릭 → 모달 열기
+  // 카드 클릭 → 모달
   const card = e.target.closest('.card');
   if (card) openModal(card.dataset.pageId);
 });
 
-document.getElementById('emojiPicker').addEventListener('click', (e) => {
+document.getElementById('emojiPicker').addEventListener('click', e => {
   const opt = e.target.closest('.emoji-option');
   if (!opt) return;
-  const pageId = opt.dataset.page;
-  const emoji = opt.dataset.emoji;
+  const { page: pageId, emoji } = opt.dataset;
   document.getElementById('emojiPicker').classList.remove('show');
   if (!reactionData[pageId]) reactionData[pageId] = {};
-  const uk = `_user_${emoji}`;
-  const had = reactionData[pageId][uk];
+  const uk = `_user_${emoji}`, had = reactionData[pageId][uk];
   reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (had ? -1 : 1);
   if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
   reactionData[pageId][uk] = !had;
@@ -447,11 +533,8 @@ function renderGallery(pages) {
     const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
     const tags = props['태그']?.multi_select?.map(t => t.name) || [];
     const media = extractFirstMedia(page.blocks || []);
-
-    const hasBrand = !!brand;
-    const hasTypes = copyTypes.length > 0;
+    const hasBrand = !!brand, hasTypes = copyTypes.length > 0;
     const divider = hasBrand && hasTypes ? '<span class="badge-divider"></span>' : '';
-
     return `
       <div class="card" data-page-id="${page._id}">
         <div class="card-media">${buildCardMediaHTML(media)}</div>
@@ -467,16 +550,13 @@ function renderGallery(pages) {
         </div>
         ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
         <div class="card-reactions">${buildReactionHTML(page._id)}</div>
-        ${isEditMode ? `<button class="edit-card-btn" data-page-id="${page._id}">✏️ 편집</button>` : ''}
       </div>`;
   }).join('');
 }
 
 // ── 캐러셀 ──────────────────────────────────────────
 function renderCarousel(mediaItems) {
-  carouselItems = mediaItems;
-  carouselIndex = 0;
-
+  carouselItems = mediaItems; carouselIndex = 0;
   const track = document.getElementById('carouselTrack');
   const footer = document.getElementById('carouselFooter');
   const counter = document.getElementById('carouselCounter');
@@ -486,22 +566,19 @@ function renderCarousel(mediaItems) {
 
   if (!mediaItems.length) {
     track.innerHTML = '<div class="carousel-slide"><div class="no-media">미디어 없음</div></div>';
-    footer.style.display = 'none';
-    prevBtn.classList.add('hidden');
-    nextBtn.classList.add('hidden');
+    footer.style.display = 'none'; prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden');
     return;
   }
 
-  track.innerHTML = mediaItems.map((m) => {
+  track.innerHTML = mediaItems.map(m => {
     let inner = '';
-    if (m.type === 'image') inner = `<img src="${m.url}" alt="" data-lightbox="${m.url}">`;
-    else if (m.type === 'youtube') inner = `<iframe src="https://www.youtube.com/embed/${m.id}" allowfullscreen></iframe>`;
-    else if (m.type === 'video') inner = `<video src="${m.url}" controls style="max-width:100%;max-height:100%"></video>`;
-    else if (m.type === 'embed') inner = `<iframe src="${m.url}" allowfullscreen style="width:100%;aspect-ratio:16/9"></iframe>`;
+    if (m.type === 'image') inner = `<img src="${m.url}" alt="" data-lightbox="${m.url}" style="max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;">`;
+    else if (m.type === 'youtube') inner = `<iframe src="https://www.youtube.com/embed/${m.id}" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;"></iframe>`;
+    else if (m.type === 'video') inner = `<video src="${m.url}" controls style="max-width:100%;max-height:100%;"></video>`;
+    else if (m.type === 'embed') inner = `<iframe src="${m.url}" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;"></iframe>`;
     return `<div class="carousel-slide">${inner}</div>`;
   }).join('');
 
-  // 이미지 클릭 → 라이트박스
   track.querySelectorAll('img[data-lightbox]').forEach(img => {
     img.addEventListener('click', () => openLightbox(img.dataset.lightbox));
   });
@@ -515,20 +592,15 @@ function renderCarousel(mediaItems) {
     dots.querySelectorAll('.carousel-dot').forEach(dot => {
       dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.index)));
     });
-    prevBtn.classList.remove('hidden');
-    nextBtn.classList.remove('hidden');
+    prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden');
   } else {
-    footer.style.display = 'none';
-    prevBtn.classList.add('hidden');
-    nextBtn.classList.add('hidden');
+    footer.style.display = 'none'; prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden');
   }
-
   updateCarousel();
 }
 
 function updateCarousel() {
-  const track = document.getElementById('carouselTrack');
-  track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  document.getElementById('carouselTrack').style.transform = `translateX(-${carouselIndex * 100}%)`;
   document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === carouselIndex));
   const counter = document.getElementById('carouselCounter');
   if (carouselItems.length > 1) counter.textContent = `${carouselIndex + 1} / ${carouselItems.length}`;
@@ -540,10 +612,7 @@ function moveCarousel(dir) {
   updateCarousel();
 }
 
-function goToSlide(i) {
-  carouselIndex = i;
-  updateCarousel();
-}
+function goToSlide(i) { carouselIndex = i; updateCarousel(); }
 
 // ── 라이트박스 ──────────────────────────────────────────
 function setLightboxZoom(mode) {
@@ -553,52 +622,18 @@ function setLightboxZoom(mode) {
   else if (mode === 'original') img.classList.add('zoom-original');
   else if (mode === 'zoomin') img.classList.add('zoom-in');
   ['lbFit','lbOriginal','lbZoomIn'].forEach(id => document.getElementById(id).classList.remove('active'));
-  const map = { fit: 'lbFit', original: 'lbOriginal', zoomin: 'lbZoomIn' };
-  document.getElementById(map[mode]).classList.add('active');
+  document.getElementById({fit:'lbFit',original:'lbOriginal',zoomin:'lbZoomIn'}[mode]).classList.add('active');
 }
 function openLightbox(url) {
   const img = document.getElementById('lightboxImg');
-  img.src = url;
-  img.className = 'fit-screen';
-  ['lbFit','lbOriginal','lbZoomIn'].forEach(id => document.getElementById(id).classList.remove('active'));
+  img.src = url; img.className = 'fit-screen';
   document.getElementById('lbFit').classList.add('active');
+  document.getElementById('lbOriginal').classList.remove('active');
+  document.getElementById('lbZoomIn').classList.remove('active');
   document.getElementById('lightbox').classList.add('show');
   document.getElementById('lightbox').scrollTop = 0;
 }
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('show');
-}
-document.getElementById('lbFit').addEventListener('click', (e) => { e.stopPropagation(); setLightboxZoom('fit'); });
-document.getElementById('lbOriginal').addEventListener('click', (e) => { e.stopPropagation(); setLightboxZoom('original'); });
-document.getElementById('lbZoomIn').addEventListener('click', (e) => { e.stopPropagation(); setLightboxZoom('zoomin'); });
-
-// ── 본문 텍스트 블록 추출 ──────────────────────────────────────────
-function extractBodyText(blocks) {
-  const lines = [];
-  for (const block of blocks) {
-    const type = block.type;
-    const getText = (b, key) => b[key]?.rich_text?.map(t => t.plain_text).join('') || '';
-    if (type === 'paragraph') {
-      const t = getText(block, 'paragraph');
-      if (t) lines.push(`<div class="block-text">${t}</div>`);
-    } else if (type === 'heading_1') {
-      lines.push(`<div class="block-heading block-heading-1">${getText(block, 'heading_1')}</div>`);
-    } else if (type === 'heading_2') {
-      lines.push(`<div class="block-heading block-heading-2">${getText(block, 'heading_2')}</div>`);
-    } else if (type === 'heading_3') {
-      lines.push(`<div class="block-heading block-heading-3">${getText(block, 'heading_3')}</div>`);
-    } else if (type === 'bulleted_list_item') {
-      lines.push(`<div class="block-bulleted">${getText(block, 'bulleted_list_item')}</div>`);
-    } else if (type === 'numbered_list_item') {
-      lines.push(`<div class="block-numbered">${getText(block, 'numbered_list_item')}</div>`);
-    } else if (type === 'quote') {
-      lines.push(`<div class="block-quote">${getText(block, 'quote')}</div>`);
-    } else if (type === 'column_list' || type === 'column') {
-      if (block.children) lines.push(...extractBodyText(block.children).split('</div><div').map((s,i) => i===0?s+'</div>':'<div'+s));
-    }
-  }
-  return lines.join('');
-}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
 
 // ── 토글 ──────────────────────────────────────────
 function buildToggle(label, content) {
@@ -614,7 +649,7 @@ function buildToggle(label, content) {
     </div>`;
 }
 
-document.getElementById('modal').addEventListener('click', (e) => {
+document.getElementById('modal').addEventListener('click', e => {
   const btn = e.target.closest('.toggle-header');
   if (!btn) return;
   const id = btn.dataset.toggle;
@@ -622,10 +657,88 @@ document.getElementById('modal').addEventListener('click', (e) => {
   document.getElementById('arr_' + id).classList.toggle('open');
 });
 
+// ── 인라인 편집 ──────────────────────────────────────────
+function buildEditableField(label, value, fieldKey, pageId, isTextarea = false) {
+  const id = `field_${fieldKey.replace(/[^a-zA-Z0-9]/g, '_')}_${pageId}`;
+  const editBtn = isEditMode ? `<button class="field-edit-btn" onclick="startInlineEdit('${id}', '${fieldKey}', '${pageId}')" title="${label} 편집">✏️</button>` : '';
+  const tag = isTextarea ? 'textarea' : 'input';
+  return `
+    <div class="inline-edit-wrap" id="wrap_${id}">
+      <div class="field-row">
+        <div style="flex:1">${value}</div>
+        ${editBtn}
+      </div>
+      <div id="edit_${id}" style="display:none;">
+        <${tag} id="input_${id}" ${isTextarea ? '' : 'type="text"'} style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;${isTextarea?'min-height:80px;resize:vertical;':''}">${isTextarea ? value : ''}</${tag}>
+        ${!isTextarea ? '' : ''}
+        <div class="inline-edit-actions">
+          <button class="inline-cancel-btn" onclick="cancelInlineEdit('${id}')">취소</button>
+          <button class="inline-save-btn" onclick="saveInlineEdit('${id}', '${fieldKey}', '${pageId}')">저장</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function startInlineEdit(id, fieldKey, pageId) {
+  document.getElementById(`edit_${id}`).style.display = 'block';
+  const input = document.getElementById(`input_${id}`);
+  if (!input) return;
+  const page = allPages.find(p => p._id === pageId);
+  if (!page) return;
+  const props = page.properties;
+  let val = '';
+  if (fieldKey === '콘텐츠') val = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
+  else if (fieldKey === '날짜') val = props['날짜']?.date?.start || '';
+  else val = props[fieldKey]?.rich_text?.map(t => t.plain_text).join('') || '';
+  if (input.tagName === 'TEXTAREA') input.value = val;
+  else input.value = val;
+  input.focus();
+}
+
+function cancelInlineEdit(id) {
+  document.getElementById(`edit_${id}`).style.display = 'none';
+}
+
+async function saveInlineEdit(id, fieldKey, pageId) {
+  const input = document.getElementById(`input_${id}`);
+  const value = input.value;
+  const saveBtn = document.querySelector(`#edit_${id} .inline-save-btn`);
+  saveBtn.textContent = '저장 중...';
+  saveBtn.disabled = true;
+
+  const rawId = pageId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+  const properties = {};
+  properties[fieldKey] = value;
+
+  try {
+    const res = await fetch('/api/notion?action=updatePage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pageId: rawId, properties })
+    });
+    if (!res.ok) throw new Error('저장 실패');
+    // 로컬 데이터 업데이트
+    const page = allPages.find(p => p._id === pageId);
+    if (page) {
+      const props = page.properties;
+      if (fieldKey === '콘텐츠') props['콘텐츠'].title = [{ plain_text: value }];
+      else if (fieldKey === '날짜') props['날짜'].date = { start: value };
+      else if (props[fieldKey]?.rich_text !== undefined) props[fieldKey].rich_text = [{ plain_text: value }];
+    }
+    document.getElementById(`edit_${id}`).style.display = 'none';
+    openModal(pageId); // 모달 새로고침
+  } catch(err) {
+    alert('저장 오류: ' + err.message);
+    saveBtn.textContent = '저장';
+    saveBtn.disabled = false;
+  }
+}
+
 // ── 모달 열기 ──────────────────────────────────────────
 function openModal(pageId) {
   const page = allPages.find(p => p._id === pageId);
   if (!page) return;
+  currentModalPageId = pageId;
   const props = page.properties;
   const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
   const brand = props['브랜드명']?.select?.name || '';
@@ -638,60 +751,88 @@ function openModal(pageId) {
   const tags = props['태그']?.multi_select?.map(t => t.name) || [];
   const sourceUrl = props['출처 URL']?.url || '';
   const mediaItems = extractAllMedia(page.blocks || []);
+  const bodyText = extractBodyText(page.blocks || []);
 
   renderCarousel(mediaItems);
 
-  const hasBrand = !!brand;
-  const hasTypes = copyTypes.length > 0;
-  const divider = hasBrand && hasTypes ? '<span class="modal-badge-divider"></span>' : '';
+  const eb = isEditMode;
 
-  // 닫기 버튼은 innerHTML 덮어써도 유지되도록 별도 삽입
-  const rightEl = document.getElementById('modalRight');
-  rightEl.innerHTML = `<button class="modal-close" id="modalCloseBtn">✕</button>
+  document.getElementById('modalRight').innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">✕</button>
     <div class="modal-badge-row">
-      ${brand ? `<div class="modal-badge-brand-group"><span style="font-size:11px;color:#aaa;font-weight:600;margin-right:4px;">브랜드명</span><span class="card-brand">${brand}</span></div>` : ''}
-      ${copyTypes.length ? `<div class="modal-badge-type-group"><span style="font-size:11px;color:#aaa;font-weight:600;margin-right:4px;">카피 유형</span>${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}</div>` : ''}
+      ${brand ? `<div class="modal-badge-group"><span class="modal-badge-label">브랜드명</span><span class="card-brand">${brand}</span></div>` : ''}
+      ${copyTypes.length ? `<div class="modal-badge-group"><span class="modal-badge-label">카피 유형</span>${copyTypes.map(t=>`<span class="card-type">${t}</span>`).join('')}</div>` : ''}
     </div>
-        <div class="modal-title">${title}</div>
-    <div class="modal-date">${date}</div>
-    ${overview ? `<div class="modal-overview-label">브랜드 개요</div><div class="modal-overview">${overview}</div>` : ''}
+
+    ${eb ? buildEditableField('제목', `<div class="modal-title">${title}</div>`, '콘텐츠', pageId) : `<div class="modal-title">${title}</div>`}
+    ${eb ? buildEditableField('날짜', `<div class="modal-date">${date}</div>`, '날짜', pageId) : `<div class="modal-date">${date}</div>`}
+
+    ${overview || eb ? `
+      <div class="modal-overview-label">브랜드 개요</div>
+      ${eb ? buildEditableField('브랜드 개요', `<div class="modal-overview">${overview || '(없음)'}</div>`, '브랜드 개요', pageId, true)
+            : `<div class="modal-overview">${overview}</div>`}
+    ` : ''}
+
     ${sourceUrl ? `<div class="modal-source"><a href="${sourceUrl}" target="_blank">🔗 출처 바로가기</a></div>` : ''}
-    ${buildToggle('주목할 캠페인/콘텐츠', campaign)}
-    ${buildToggle('적용해 볼 아이디어', idea)}
-    ${buildToggle('인사이트 (내가 배운 것)', insight)}
-    ${buildToggle('📄 본문 내용', extractBodyText(page.blocks || []))}
+
+    ${eb && campaign !== undefined ? buildEditableToggle('주목할 캠페인/콘텐츠', campaign, '주목할 캠페인/콘텐츠', pageId)
+                                   : buildToggle('주목할 캠페인/콘텐츠', campaign)}
+    ${eb && idea !== undefined ? buildEditableToggle('적용해 볼 아이디어', idea, '적용해 볼 아이디어', pageId)
+                                : buildToggle('적용해 볼 아이디어', idea)}
+    ${eb && insight !== undefined ? buildEditableToggle('인사이트 (내가 배운 것)', insight, '인사이트 (내가 배운 것)', pageId)
+                                  : buildToggle('인사이트 (내가 배운 것)', insight)}
+    ${buildToggle('📄 본문 내용', bodyText)}
     ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
   `;
 
   document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
-  const overlay = document.getElementById('modalOverlay');
-  overlay.style.display = 'flex';
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function buildEditableToggle(label, value, fieldKey, pageId) {
+  const id = 'tg_' + Math.random().toString(36).slice(2);
+  const fid = `field_${fieldKey.replace(/[^a-zA-Z0-9]/g, '_')}_${pageId}`;
+  return `
+    <div class="toggle-section">
+      <button class="toggle-header" data-toggle="${id}">
+        <span>${label}</span>
+        <span class="toggle-arrow" id="arr_${id}">▼</span>
+      </button>
+      <div class="toggle-body" id="${id}">
+        <div class="inline-edit-wrap" id="wrap_${fid}">
+          <div class="field-row">
+            <div style="flex:1;white-space:pre-wrap;">${value || '(없음)'}</div>
+            <button class="field-edit-btn" onclick="startInlineEdit('${fid}', '${fieldKey}', '${pageId}')" title="편집">✏️</button>
+          </div>
+          <div id="edit_${fid}" style="display:none;">
+            <textarea id="input_${fid}" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;min-height:80px;resize:vertical;">${value}</textarea>
+            <div class="inline-edit-actions">
+              <button class="inline-cancel-btn" onclick="cancelInlineEdit('${fid}')">취소</button>
+              <button class="inline-save-btn" onclick="saveInlineEdit('${fid}', '${fieldKey}', '${pageId}')">저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function closeModal() {
-  const overlay = document.getElementById('modalOverlay');
-  overlay.style.display = 'none';
+  document.getElementById('modalOverlay').style.display = 'none';
+  currentModalPageId = null;
 }
 
 // ── 필터 ──────────────────────────────────────────
 function applyFilters() {
-  loadPages(
-    document.getElementById('brandFilter').value,
-    document.getElementById('dateStart').value,
-    document.getElementById('dateEnd').value
-  );
+  loadPages(document.getElementById('brandFilter').value, document.getElementById('dateStart').value, document.getElementById('dateEnd').value);
 }
-
 function applyMonthFilter() {
-  const end = new Date();
-  const start = new Date();
+  const end = new Date(), start = new Date();
   start.setMonth(start.getMonth() - 1);
   const fmt = d => d.toISOString().split('T')[0];
   document.getElementById('dateStart').value = fmt(start);
   document.getElementById('dateEnd').value = fmt(end);
   loadPages(document.getElementById('brandFilter').value, fmt(start), fmt(end));
 }
-
 function resetFilters() {
   document.getElementById('brandFilter').value = '';
   document.getElementById('dateStart').value = '';
@@ -699,135 +840,8 @@ function resetFilters() {
   loadPages();
 }
 
-
-// ── 편집 모드 ──────────────────────────────────────────
-const EDIT_CODE = 'underdogvibe2024';
-let isEditMode = false;
-let currentEditPageId = null;
-
-function checkEditModeFromURL() {
-  const param = new URLSearchParams(location.search).get('edit');
-  if (param === EDIT_CODE) activateEditMode();
-}
-
-function activateEditMode() {
-  isEditMode = true;
-  const btn = document.getElementById('editModeBtn');
-  btn.textContent = '🔓 편집 모드 ON';
-  btn.classList.add('active');
-  document.getElementById('editIndicator').classList.add('show');
-  renderGallery(allPages);
-  // URL에 파라미터 반영 (숨김)
-  const url = new URL(location.href);
-  url.searchParams.set('edit', EDIT_CODE);
-  history.replaceState(null, '', url);
-}
-
-function deactivateEditMode() {
-  isEditMode = false;
-  const btn = document.getElementById('editModeBtn');
-  btn.textContent = '🔒 편집 모드';
-  btn.classList.remove('active');
-  document.getElementById('editIndicator').classList.remove('show');
-  renderGallery(allPages);
-  const url = new URL(location.href);
-  url.searchParams.delete('edit');
-  history.replaceState(null, '', url);
-}
-
-document.getElementById('editModeBtn').addEventListener('click', () => {
-  if (isEditMode) { deactivateEditMode(); return; }
-  document.getElementById('unlockOverlay').classList.add('show');
-  document.getElementById('unlockInput').value = '';
-  document.getElementById('unlockError').style.display = 'none';
-  setTimeout(() => document.getElementById('unlockInput').focus(), 100);
-});
-
-document.getElementById('unlockOverlay').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('unlockOverlay')) document.getElementById('unlockOverlay').classList.remove('show');
-});
-
-document.getElementById('unlockSubmit').addEventListener('click', () => {
-  const val = document.getElementById('unlockInput').value.trim();
-  if (val === EDIT_CODE) {
-    document.getElementById('unlockOverlay').classList.remove('show');
-    activateEditMode();
-  } else {
-    document.getElementById('unlockError').style.display = 'block';
-  }
-});
-
-document.getElementById('unlockInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') document.getElementById('unlockSubmit').click();
-});
-
-// 카드 편집 버튼 클릭
-document.getElementById('gallery').addEventListener('click', (e) => {
-  const editBtn = e.target.closest('.edit-card-btn');
-  if (editBtn) {
-    e.stopPropagation();
-    openEditModal(editBtn.dataset.pageId);
-  }
-}, true);
-
-function openEditModal(pageId) {
-  const page = allPages.find(p => p._id === pageId);
-  if (!page) return;
-  currentEditPageId = pageId;
-  const props = page.properties;
-  document.getElementById('ef-title').value = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
-  document.getElementById('ef-brand').value = props['브랜드명']?.select?.name || '';
-  document.getElementById('ef-date').value = props['날짜']?.date?.start || '';
-  document.getElementById('ef-overview').value = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
-  document.getElementById('ef-campaign').value = props['주목할 캠페인/콘텐츠']?.rich_text?.map(t => t.plain_text).join('') || '';
-  document.getElementById('ef-idea').value = props['적용해 볼 아이디어']?.rich_text?.map(t => t.plain_text).join('') || '';
-  document.getElementById('ef-insight').value = props['인사이트 (내가 배운 것)']?.rich_text?.map(t => t.plain_text).join('') || '';
-  document.getElementById('ef-url').value = props['출처 URL']?.url || '';
-  document.getElementById('editOverlay').classList.add('show');
-}
-
-document.getElementById('editCancelBtn').addEventListener('click', () => {
-  document.getElementById('editOverlay').classList.remove('show');
-});
-
-document.getElementById('editSaveBtn').addEventListener('click', async () => {
-  const saveBtn = document.getElementById('editSaveBtn');
-  saveBtn.textContent = '저장 중...';
-  saveBtn.classList.add('edit-saving');
-
-  const body = {
-    pageId: currentEditPageId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5'),
-    properties: {
-      '콘텐츠': document.getElementById('ef-title').value,
-      '브랜드명': document.getElementById('ef-brand').value,
-      '날짜': document.getElementById('ef-date').value,
-      '브랜드 개요': document.getElementById('ef-overview').value,
-      '주목할 캠페인/콘텐츠': document.getElementById('ef-campaign').value,
-      '적용해 볼 아이디어': document.getElementById('ef-idea').value,
-      '인사이트 (내가 배운 것)': document.getElementById('ef-insight').value,
-      '출처 URL': document.getElementById('ef-url').value,
-    }
-  };
-
-  try {
-    const res = await fetch('/api/notion?action=updatePage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error('저장 실패');
-    document.getElementById('editOverlay').classList.remove('show');
-    await loadPages();
-  } catch(err) {
-    alert('저장 중 오류가 발생했습니다: ' + err.message);
-  } finally {
-    saveBtn.textContent = '저장';
-    saveBtn.classList.remove('edit-saving');
-  }
-});
-
 loadBrands();
-loadPages().then(() => checkEditModeFromURL());
+loadPages();
 </script>
 </body>
 </html>
