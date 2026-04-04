@@ -30,12 +30,13 @@
     .card-media iframe { width: 100%; aspect-ratio: 16/9; border: none; display: block; }
     .card-media .no-media { display: flex; align-items: center; justify-content: center; height: 160px; color: #bbb; font-size: 14px; }
     .card-body { padding: 14px 16px; }
-    .badge-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 8px; }
+    .badge-divider { width: 1px; height: 14px; background: #ddd; margin: 0 2px; }
     .card-brand { background: #f0f0f0; color: #555; font-size: 11px; padding: 2px 8px; border-radius: 20px; }
     .card-type { background: #e8f4ff; color: #3b82f6; font-size: 11px; padding: 2px 8px; border-radius: 20px; }
     .card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
     .card-date { font-size: 11px; color: #bbb; margin-bottom: 8px; }
-    .card-overview-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 3px; }
+    .card-overview-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 3px; letter-spacing: 0.3px; }
     .card-overview { font-size: 13px; color: #555; line-height: 1.5; }
     .card-tags { padding: 6px 16px 10px; display: flex; flex-wrap: wrap; gap: 4px; }
     .tag { font-size: 11px; color: #888; background: #f5f5f5; padding: 2px 8px; border-radius: 20px; }
@@ -57,58 +58,64 @@
 
     /* 모달 본체 */
     .modal-wrap { position: relative; width: 100%; max-width: 960px; }
-    .modal-close { position: absolute; top: -36px; right: 0; font-size: 22px; cursor: pointer; color: white; z-index: 10; line-height: 1; }
+    .modal-close { position: absolute; top: -36px; right: 0; font-size: 22px; cursor: pointer; color: white; z-index: 10; line-height: 1; background: none; border: none; }
     .modal { background: white; border-radius: 16px; overflow: hidden; display: flex; max-height: 85vh; }
 
-    /* 모달 좌측: 이미지 캐러셀 */
-    .modal-left { flex: 0 0 55%; background: #111; position: relative; display: flex; flex-direction: column; min-height: 300px; }
-    .carousel { flex: 1; overflow: hidden; position: relative; }
-    .carousel-track { display: flex; height: 100%; transition: transform 0.3s ease; }
-    .carousel-slide { flex: 0 0 100%; display: flex; align-items: center; justify-content: center; background: #111; cursor: zoom-in; }
-    .carousel-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    /* 모달 좌측: 캐러셀 */
+    .modal-left { flex: 0 0 55%; background: #111; position: relative; display: flex; flex-direction: column; min-height: 340px; }
+    .carousel { flex: 1; overflow: hidden; position: relative; min-height: 200px; }
+    .carousel-track { display: flex; height: 100%; transition: transform 0.3s ease; will-change: transform; }
+    .carousel-slide { flex: 0 0 100%; width: 100%; display: flex; align-items: center; justify-content: center; background: #111; }
+    .carousel-slide img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; display: block; }
     .carousel-slide iframe { width: 100%; aspect-ratio: 16/9; border: none; }
     .carousel-slide video { max-width: 100%; max-height: 100%; }
     .carousel-slide .no-media { color: #555; font-size: 14px; }
-    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; }
-    .carousel-btn:hover { background: rgba(255,255,255,0.3); }
+
+    /* 캐러셀 버튼 — 항상 DOM에 존재, show/hide로 제어 */
+    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; user-select: none; }
+    .carousel-btn:hover { background: rgba(255,255,255,0.35); }
     .carousel-btn.prev { left: 10px; }
     .carousel-btn.next { right: 10px; }
-    .carousel-dots { display: flex; justify-content: center; gap: 6px; padding: 10px; background: #111; }
-    .carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.2s; }
+    .carousel-btn.hidden { display: none; }
+
+    .carousel-footer { background: #111; padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .carousel-counter { color: rgba(255,255,255,0.6); font-size: 11px; }
+    .carousel-dots { display: flex; gap: 6px; }
+    .carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.2s; border: none; padding: 0; }
     .carousel-dot.active { background: white; }
-    .carousel-counter { position: absolute; top: 10px; right: 12px; background: rgba(0,0,0,0.5); color: white; font-size: 12px; padding: 3px 8px; border-radius: 20px; z-index: 5; }
 
     /* 이미지 확대 */
-    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 600; align-items: center; justify-content: center; cursor: zoom-out; }
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 600; align-items: center; justify-content: center; cursor: zoom-out; }
     .lightbox.show { display: flex; }
     .lightbox img { max-width: 92vw; max-height: 92vh; object-fit: contain; border-radius: 4px; }
-    .lightbox-close { position: absolute; top: 16px; right: 20px; color: white; font-size: 28px; cursor: pointer; }
+    .lightbox-close { position: absolute; top: 16px; right: 20px; color: white; font-size: 28px; cursor: pointer; background: none; border: none; }
 
-    /* 모달 우측: 텍스트 */
+    /* 모달 우측 */
     .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; }
-    .modal-badge-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+    .modal-badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 10px; }
+    .modal-badge-divider { width: 1px; height: 14px; background: #ddd; margin: 0 2px; }
     .modal-title { font-size: 17px; font-weight: 700; line-height: 1.4; margin-bottom: 4px; }
     .modal-date { font-size: 12px; color: #bbb; margin-bottom: 16px; }
-    .modal-overview { font-size: 14px; color: #444; line-height: 1.7; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
-    .modal-source { margin-bottom: 16px; }
-    .modal-source a { font-size: 13px; color: #3b82f6; word-break: break-all; }
+    .modal-overview-label { font-size: 11px; color: #aaa; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 5px; }
+    .modal-overview { font-size: 14px; color: #444; line-height: 1.7; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
+    .modal-source { margin-bottom: 14px; }
+    .modal-source a { font-size: 13px; color: #3b82f6; word-break: break-all; text-decoration: none; }
+    .modal-source a:hover { text-decoration: underline; }
 
-    /* 토글 섹션 */
+    /* 토글 */
     .toggle-section { border: 1px solid #eee; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
-    .toggle-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; background: #fafafa; font-size: 13px; font-weight: 600; color: #444; user-select: none; }
+    .toggle-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; background: #fafafa; font-size: 13px; font-weight: 600; color: #444; user-select: none; border: none; width: 100%; text-align: left; }
     .toggle-header:hover { background: #f0f0f0; }
-    .toggle-arrow { font-size: 11px; color: #aaa; transition: transform 0.2s; }
+    .toggle-arrow { font-size: 10px; color: #aaa; transition: transform 0.2s; display: inline-block; }
     .toggle-arrow.open { transform: rotate(180deg); }
     .toggle-body { padding: 12px 16px; font-size: 13px; color: #555; line-height: 1.7; display: none; }
     .toggle-body.open { display: block; }
-
-    /* 모달 태그 */
     .modal-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 16px; }
 
     /* 반응형 */
     @media (max-width: 700px) {
       .modal { flex-direction: column; max-height: 92vh; overflow-y: auto; }
-      .modal-left { flex: none; min-height: 220px; }
+      .modal-left { flex: none; min-height: 240px; }
       .modal-right { padding: 20px 16px; }
       .gallery { padding: 16px; gap: 14px; }
       .header { padding: 16px; }
@@ -140,29 +147,29 @@
 </div>
 
 <!-- 모달 -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModalByOverlay(event)">
+<div class="modal-overlay" id="modalOverlay">
   <div class="modal-wrap">
-    <span class="modal-close" onclick="closeModal()">✕</span>
+    <button class="modal-close" id="modalCloseBtn">✕</button>
     <div class="modal" id="modal">
-      <!-- 좌측 캐러셀 -->
       <div class="modal-left" id="modalLeft">
         <div class="carousel" id="carousel">
           <div class="carousel-track" id="carouselTrack"></div>
+          <button class="carousel-btn prev hidden" id="prevBtn">‹</button>
+          <button class="carousel-btn next hidden" id="nextBtn">›</button>
         </div>
-        <div class="carousel-counter" id="carouselCounter" style="display:none"></div>
-        <div class="carousel-dots" id="carouselDots"></div>
-        <button class="carousel-btn prev" id="prevBtn" onclick="moveCarousel(-1)" style="display:none">‹</button>
-        <button class="carousel-btn next" id="nextBtn" onclick="moveCarousel(1)" style="display:none">›</button>
+        <div class="carousel-footer" id="carouselFooter" style="display:none">
+          <div class="carousel-counter" id="carouselCounter"></div>
+          <div class="carousel-dots" id="carouselDots"></div>
+        </div>
       </div>
-      <!-- 우측 텍스트 -->
       <div class="modal-right" id="modalRight"></div>
     </div>
   </div>
 </div>
 
-<!-- 이미지 확대 -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <span class="lightbox-close">✕</span>
+<!-- 라이트박스 -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">✕</button>
   <img id="lightboxImg" src="" alt="">
 </div>
 
@@ -178,16 +185,52 @@ let allPages = [];
 let reactionData = JSON.parse(localStorage.getItem('reactions') || '{}');
 let carouselIndex = 0;
 let carouselItems = [];
+let touchStartX = 0;
+let touchEndX = 0;
 
 function saveReactions() { localStorage.setItem('reactions', JSON.stringify(reactionData)); }
 
+// ── 이벤트 바인딩 ──────────────────────────────────────────
+// 모달 닫기
+document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+// 캐러셀 버튼
+document.getElementById('prevBtn').addEventListener('click', () => moveCarousel(-1));
+document.getElementById('nextBtn').addEventListener('click', () => moveCarousel(1));
+
+// 캐러셀 터치 스와이프
+const carousel = document.getElementById('carousel');
+carousel.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+carousel.addEventListener('touchend', (e) => {
+  touchEndX = e.changedTouches[0].screenX;
+  const diff = touchStartX - touchEndX;
+  if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
+});
+
+// 라이트박스
+document.getElementById('lightbox').addEventListener('click', closeLightbox);
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+
+// 이모지 피커 닫기
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.add-reaction-btn') && !e.target.closest('#emojiPicker')) {
     document.getElementById('emojiPicker').classList.remove('show');
   }
 });
 
-// 브랜드 목록
+// 갤러리 클릭 이벤트 위임 (PC 모달 문제 해결 핵심)
+document.getElementById('gallery').addEventListener('click', (e) => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  // 반응 버튼 클릭 시 모달 열지 않음
+  if (e.target.closest('.card-reactions')) return;
+  openModal(card.dataset.pageId);
+});
+
+// ── 데이터 로드 ──────────────────────────────────────────
 async function loadBrands() {
   try {
     const res = await fetch(`${API_BASE}?action=getBrands`);
@@ -201,7 +244,6 @@ async function loadBrands() {
   } catch(e) { console.error(e); }
 }
 
-// 페이지 로드
 async function loadPages(brandFilter='', dateStart='', dateEnd='') {
   document.getElementById('gallery').innerHTML = '<div class="loading">로딩 중...</div>';
   try {
@@ -218,13 +260,12 @@ async function loadPages(brandFilter='', dateStart='', dateEnd='') {
   }
 }
 
-// 유튜브 ID 추출
+// ── 미디어 추출 ──────────────────────────────────────────
 function getYouTubeId(url) {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : null;
 }
 
-// 블록에서 미디어 전체 추출 (배열 반환)
 function extractAllMedia(blocks) {
   const items = [];
   for (const block of blocks) {
@@ -248,10 +289,8 @@ function extractAllMedia(blocks) {
   return items;
 }
 
-// 카드용 첫 번째 미디어만
 function extractFirstMedia(blocks) {
-  const all = extractAllMedia(blocks);
-  return all[0] || null;
+  return extractAllMedia(blocks)[0] || null;
 }
 
 function buildCardMediaHTML(media) {
@@ -263,44 +302,56 @@ function buildCardMediaHTML(media) {
   return '<div class="no-media">미디어 없음</div>';
 }
 
-// 반응 HTML
+// ── 반응 이모지 ──────────────────────────────────────────
 function buildReactionHTML(pageId) {
   const r = reactionData[pageId] || {};
   let html = DEFAULT_REACTIONS.map(emoji => {
     const count = r[emoji] || 0;
     const active = r[`_user_${emoji}`] ? 'active' : '';
-    return `<button class="reaction-btn ${active}" onclick="toggleReaction(event,'${pageId}','${emoji}')">${emoji}<span class="reaction-count">${count||''}</span></button>`;
+    return `<button class="reaction-btn ${active}" data-page="${pageId}" data-emoji="${emoji}">${emoji}<span class="reaction-count">${count||''}</span></button>`;
   }).join('');
-  html += `<button class="add-reaction-btn" onclick="openEmojiPicker(event,'${pageId}')">+</button>`;
+  html += `<button class="add-reaction-btn" data-page="${pageId}">+</button>`;
   return html;
 }
 
-function toggleReaction(e, pageId, emoji) {
-  e.stopPropagation();
-  if (!reactionData[pageId]) reactionData[pageId] = {};
-  const uk = `_user_${emoji}`;
-  const had = reactionData[pageId][uk];
-  reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (had ? -1 : 1);
-  if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
-  reactionData[pageId][uk] = !had;
-  saveReactions();
-  const card = e.target.closest('.card');
-  if (card) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
-}
+document.getElementById('gallery').addEventListener('click', (e) => {
+  const rb = e.target.closest('.reaction-btn');
+  if (rb) {
+    e.stopPropagation();
+    const pageId = rb.dataset.page;
+    const emoji = rb.dataset.emoji;
+    if (!reactionData[pageId]) reactionData[pageId] = {};
+    const uk = `_user_${emoji}`;
+    const had = reactionData[pageId][uk];
+    reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (had ? -1 : 1);
+    if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
+    reactionData[pageId][uk] = !had;
+    saveReactions();
+    const card = rb.closest('.card');
+    if (card) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
+    return;
+  }
+  const ab = e.target.closest('.add-reaction-btn');
+  if (ab) {
+    e.stopPropagation();
+    const pageId = ab.dataset.page;
+    const picker = document.getElementById('emojiPicker');
+    picker.innerHTML = EXTRA_EMOJIS.map(em =>
+      `<span class="emoji-option" data-page="${pageId}" data-emoji="${em}">${em}</span>`
+    ).join('');
+    const rect = ab.getBoundingClientRect();
+    picker.style.top = (rect.bottom + 4) + 'px';
+    picker.style.left = rect.left + 'px';
+    picker.classList.toggle('show');
+    return;
+  }
+});
 
-function openEmojiPicker(e, pageId) {
-  e.stopPropagation();
-  const picker = document.getElementById('emojiPicker');
-  picker.innerHTML = EXTRA_EMOJIS.map(em =>
-    `<span class="emoji-option" onclick="addCustomReaction('${pageId}','${em}')">${em}</span>`
-  ).join('');
-  const rect = e.target.getBoundingClientRect();
-  picker.style.top = (rect.bottom + 4) + 'px';
-  picker.style.left = rect.left + 'px';
-  picker.classList.toggle('show');
-}
-
-function addCustomReaction(pageId, emoji) {
+document.getElementById('emojiPicker').addEventListener('click', (e) => {
+  const opt = e.target.closest('.emoji-option');
+  if (!opt) return;
+  const pageId = opt.dataset.page;
+  const emoji = opt.dataset.emoji;
   document.getElementById('emojiPicker').classList.remove('show');
   if (!reactionData[pageId]) reactionData[pageId] = {};
   const uk = `_user_${emoji}`;
@@ -313,9 +364,9 @@ function addCustomReaction(pageId, emoji) {
     if (card.dataset.pageId === pageId)
       card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
   });
-}
+});
 
-// 갤러리 렌더
+// ── 갤러리 렌더 ──────────────────────────────────────────
 function renderGallery(pages) {
   const gallery = document.getElementById('gallery');
   if (!pages.length) { gallery.innerHTML = '<div class="loading">등록된 레퍼런스가 없습니다</div>'; return; }
@@ -328,12 +379,18 @@ function renderGallery(pages) {
     const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
     const tags = props['태그']?.multi_select?.map(t => t.name) || [];
     const media = extractFirstMedia(page.blocks || []);
+
+    const hasBrand = !!brand;
+    const hasTypes = copyTypes.length > 0;
+    const divider = hasBrand && hasTypes ? '<span class="badge-divider"></span>' : '';
+
     return `
-      <div class="card" data-page-id="${page.id}" onclick="openModal(this.dataset.pageId)">
+      <div class="card" data-page-id="${page.id}">
         <div class="card-media">${buildCardMediaHTML(media)}</div>
         <div class="card-body">
           <div class="badge-row">
             ${brand ? `<span class="card-brand">${brand}</span>` : ''}
+            ${divider}
             ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
           </div>
           <div class="card-title">${title}</div>
@@ -346,59 +403,70 @@ function renderGallery(pages) {
   }).join('');
 }
 
-// 캐러셀
+// ── 캐러셀 ──────────────────────────────────────────
 function renderCarousel(mediaItems) {
   carouselItems = mediaItems;
   carouselIndex = 0;
+
   const track = document.getElementById('carouselTrack');
-  const dots = document.getElementById('carouselDots');
+  const footer = document.getElementById('carouselFooter');
   const counter = document.getElementById('carouselCounter');
+  const dots = document.getElementById('carouselDots');
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
 
   if (!mediaItems.length) {
     track.innerHTML = '<div class="carousel-slide"><div class="no-media">미디어 없음</div></div>';
-    dots.innerHTML = '';
-    counter.style.display = 'none';
-    prevBtn.style.display = 'none';
-    nextBtn.style.display = 'none';
+    footer.style.display = 'none';
+    prevBtn.classList.add('hidden');
+    nextBtn.classList.add('hidden');
     return;
   }
 
-  track.innerHTML = mediaItems.map((m, i) => {
+  track.innerHTML = mediaItems.map((m) => {
     let inner = '';
-    if (m.type === 'image') inner = `<img src="${m.url}" alt="" onclick="openLightbox('${m.url}')">`;
+    if (m.type === 'image') inner = `<img src="${m.url}" alt="" data-lightbox="${m.url}">`;
     else if (m.type === 'youtube') inner = `<iframe src="https://www.youtube.com/embed/${m.id}" allowfullscreen></iframe>`;
     else if (m.type === 'video') inner = `<video src="${m.url}" controls style="max-width:100%;max-height:100%"></video>`;
     else if (m.type === 'embed') inner = `<iframe src="${m.url}" allowfullscreen style="width:100%;aspect-ratio:16/9"></iframe>`;
     return `<div class="carousel-slide">${inner}</div>`;
   }).join('');
 
+  // 이미지 클릭 → 라이트박스
+  track.querySelectorAll('img[data-lightbox]').forEach(img => {
+    img.addEventListener('click', () => openLightbox(img.dataset.lightbox));
+  });
+
   if (mediaItems.length > 1) {
-    dots.innerHTML = mediaItems.map((_, i) =>
-      `<div class="carousel-dot ${i===0?'active':''}" onclick="goToSlide(${i})"></div>`
-    ).join('');
-    counter.style.display = 'block';
+    footer.style.display = 'flex';
     counter.textContent = `1 / ${mediaItems.length}`;
-    prevBtn.style.display = 'flex';
-    nextBtn.style.display = 'flex';
+    dots.innerHTML = mediaItems.map((_, i) =>
+      `<button class="carousel-dot ${i===0?'active':''}" data-index="${i}"></button>`
+    ).join('');
+    dots.querySelectorAll('.carousel-dot').forEach(dot => {
+      dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.index)));
+    });
+    prevBtn.classList.remove('hidden');
+    nextBtn.classList.remove('hidden');
   } else {
-    dots.innerHTML = '';
-    counter.style.display = 'none';
-    prevBtn.style.display = 'none';
-    nextBtn.style.display = 'none';
+    footer.style.display = 'none';
+    prevBtn.classList.add('hidden');
+    nextBtn.classList.add('hidden');
   }
+
   updateCarousel();
 }
 
 function updateCarousel() {
-  document.getElementById('carouselTrack').style.transform = `translateX(-${carouselIndex * 100}%)`;
+  const track = document.getElementById('carouselTrack');
+  track.style.transform = `translateX(-${carouselIndex * 100}%)`;
   document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === carouselIndex));
   const counter = document.getElementById('carouselCounter');
   if (carouselItems.length > 1) counter.textContent = `${carouselIndex + 1} / ${carouselItems.length}`;
 }
 
 function moveCarousel(dir) {
+  if (carouselItems.length < 2) return;
   carouselIndex = (carouselIndex + dir + carouselItems.length) % carouselItems.length;
   updateCarousel();
 }
@@ -408,7 +476,7 @@ function goToSlide(i) {
   updateCarousel();
 }
 
-// 라이트박스
+// ── 라이트박스 ──────────────────────────────────────────
 function openLightbox(url) {
   document.getElementById('lightboxImg').src = url;
   document.getElementById('lightbox').classList.add('show');
@@ -417,28 +485,29 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('show');
 }
 
-// 토글 섹션
+// ── 토글 ──────────────────────────────────────────
 function buildToggle(label, content) {
   if (!content) return '';
-  const id = 'toggle_' + Math.random().toString(36).slice(2);
+  const id = 'tg_' + Math.random().toString(36).slice(2);
   return `
     <div class="toggle-section">
-      <div class="toggle-header" onclick="toggleSection('${id}')">
+      <button class="toggle-header" data-toggle="${id}">
         <span>${label}</span>
-        <span class="toggle-arrow" id="arrow_${id}">▼</span>
-      </div>
+        <span class="toggle-arrow" id="arr_${id}">▼</span>
+      </button>
       <div class="toggle-body" id="${id}">${content}</div>
     </div>`;
 }
 
-function toggleSection(id) {
-  const body = document.getElementById(id);
-  const arrow = document.getElementById('arrow_' + id);
-  body.classList.toggle('open');
-  arrow.classList.toggle('open');
-}
+document.getElementById('modal').addEventListener('click', (e) => {
+  const btn = e.target.closest('.toggle-header');
+  if (!btn) return;
+  const id = btn.dataset.toggle;
+  document.getElementById(id).classList.toggle('open');
+  document.getElementById('arr_' + id).classList.toggle('open');
+});
 
-// 모달 열기
+// ── 모달 열기 ──────────────────────────────────────────
 function openModal(pageId) {
   const page = allPages.find(p => p.id === pageId);
   if (!page) return;
@@ -457,14 +526,19 @@ function openModal(pageId) {
 
   renderCarousel(mediaItems);
 
+  const hasBrand = !!brand;
+  const hasTypes = copyTypes.length > 0;
+  const divider = hasBrand && hasTypes ? '<span class="modal-badge-divider"></span>' : '';
+
   document.getElementById('modalRight').innerHTML = `
     <div class="modal-badge-row">
       ${brand ? `<span class="card-brand">${brand}</span>` : ''}
+      ${divider}
       ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
     </div>
     <div class="modal-title">${title}</div>
     <div class="modal-date">${date}</div>
-    ${overview ? `<div class="modal-overview">${overview}</div>` : ''}
+    ${overview ? `<div class="modal-overview-label">브랜드 개요</div><div class="modal-overview">${overview}</div>` : ''}
     ${sourceUrl ? `<div class="modal-source"><a href="${sourceUrl}" target="_blank">🔗 출처 바로가기</a></div>` : ''}
     ${buildToggle('주목할 캠페인/콘텐츠', campaign)}
     ${buildToggle('적용해 볼 아이디어', idea)}
@@ -479,25 +553,23 @@ function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
 }
 
-function closeModalByOverlay(e) {
-  if (e.target === document.getElementById('modalOverlay')) closeModal();
-}
-
-// 필터
+// ── 필터 ──────────────────────────────────────────
 function applyFilters() {
-  const brand = document.getElementById('brandFilter').value;
-  const dateStart = document.getElementById('dateStart').value;
-  const dateEnd = document.getElementById('dateEnd').value;
-  loadPages(brand, dateStart, dateEnd);
+  loadPages(
+    document.getElementById('brandFilter').value,
+    document.getElementById('dateStart').value,
+    document.getElementById('dateEnd').value
+  );
 }
 
 function applyMonthFilter() {
-  const today = new Date();
-  const end = today.toISOString().split('T')[0];
-  const start = new Date(today.setMonth(today.getMonth() - 1)).toISOString().split('T')[0];
-  document.getElementById('dateStart').value = start;
-  document.getElementById('dateEnd').value = end;
-  loadPages(document.getElementById('brandFilter').value, start, end);
+  const end = new Date();
+  const start = new Date();
+  start.setMonth(start.getMonth() - 1);
+  const fmt = d => d.toISOString().split('T')[0];
+  document.getElementById('dateStart').value = fmt(start);
+  document.getElementById('dateEnd').value = fmt(end);
+  loadPages(document.getElementById('brandFilter').value, fmt(start), fmt(end));
 }
 
 function resetFilters() {
