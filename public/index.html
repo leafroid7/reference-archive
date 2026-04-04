@@ -25,10 +25,10 @@
     /* 카드 */
     .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
     .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-    .card-media { width: 100%; background: #f0f0f0; overflow: hidden; }
-    .card-media img { width: 100%; height: auto; display: block; }
-    .card-media iframe { width: 100%; aspect-ratio: 16/9; border: none; display: block; }
-    .card-media .no-media { display: flex; align-items: center; justify-content: center; height: 160px; color: #bbb; font-size: 14px; }
+    .card-media { width: 100%; background: #f0f0f0; overflow: hidden; aspect-ratio: 4/3; position: relative; }
+    .card-media img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+    .card-media iframe { width: 100%; height: 100%; border: none; display: block; }
+    .card-media .no-media { display: flex; align-items: center; justify-content: center; height: 100%; color: #bbb; font-size: 14px; }
     .card-body { padding: 14px 16px; }
     .badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 8px; }
     .badge-divider { width: 1px; height: 14px; background: #ddd; margin: 0 2px; }
@@ -86,11 +86,18 @@
     .carousel-dot.active { background: white; }
 
     /* 이미지 확대 */
-    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; overflow-y: auto; cursor: zoom-out; }
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; overflow-y: auto; }
     .lightbox.show { display: block !important; }
-    .lightbox-inner { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 56px 24px; box-sizing: border-box; }
-    .lightbox img { max-width: min(1200px, 96vw); width: auto; height: auto; border-radius: 4px; display: block; cursor: default; }
-    .lightbox-close { position: fixed; top: 14px; right: 18px; color: white; font-size: 18px; cursor: pointer; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; z-index: 100000; }
+    .lightbox-inner { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 64px 24px; box-sizing: border-box; }
+    .lightbox img { border-radius: 4px; display: block; cursor: default; transition: width 0.2s, max-width 0.2s; }
+    .lightbox img.fit-screen { max-width: min(96vw, 96vh * 2); max-height: 88vh; width: auto; height: auto; object-fit: contain; }
+    .lightbox img.zoom-original { max-width: none; width: auto; height: auto; }
+    .lightbox img.zoom-in { max-width: none; width: 150%; height: auto; }
+    .lightbox-close { position: fixed; top: 14px; right: 18px; color: white; font-size: 18px; cursor: pointer; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 100000; }
+    .lightbox-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100000; }
+    .lightbox-ctrl-btn { padding: 7px 14px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; cursor: pointer; font-size: 12px; backdrop-filter: blur(4px); transition: background 0.15s; white-space: nowrap; }
+    .lightbox-ctrl-btn:hover { background: rgba(255,255,255,0.3); }
+    .lightbox-ctrl-btn.active { background: rgba(255,255,255,0.9); color: #111; border-color: white; }
 
     /* 모달 우측 */
     .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; }
@@ -174,7 +181,12 @@
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose">✕</button>
   <div class="lightbox-inner">
-    <img id="lightboxImg" src="" alt="">
+    <img id="lightboxImg" src="" alt="" class="fit-screen">
+  </div>
+  <div class="lightbox-controls">
+    <button class="lightbox-ctrl-btn active" id="lbFit">화면 맞춤</button>
+    <button class="lightbox-ctrl-btn" id="lbOriginal">원본 크기</button>
+    <button class="lightbox-ctrl-btn" id="lbZoomIn">150% 확대</button>
   </div>
 </div>
 
@@ -362,6 +374,9 @@ document.getElementById('gallery').addEventListener('click', (e) => {
     picker.classList.toggle('show');
     return;
   }
+  // 카드 이미지 클릭 → 라이트박스
+  const cardImg = e.target.closest('.card-media img');
+  if (cardImg) { e.stopPropagation(); openLightbox(cardImg.src); return; }
   // 카드 클릭 → 모달 열기
   const card = e.target.closest('.card');
   if (card) openModal(card.dataset.pageId);
@@ -497,13 +512,31 @@ function goToSlide(i) {
 }
 
 // ── 라이트박스 ──────────────────────────────────────────
+function setLightboxZoom(mode) {
+  const img = document.getElementById('lightboxImg');
+  img.className = '';
+  if (mode === 'fit') img.classList.add('fit-screen');
+  else if (mode === 'original') img.classList.add('zoom-original');
+  else if (mode === 'zoomin') img.classList.add('zoom-in');
+  ['lbFit','lbOriginal','lbZoomIn'].forEach(id => document.getElementById(id).classList.remove('active'));
+  const map = { fit: 'lbFit', original: 'lbOriginal', zoomin: 'lbZoomIn' };
+  document.getElementById(map[mode]).classList.add('active');
+}
 function openLightbox(url) {
-  document.getElementById('lightboxImg').src = url;
+  const img = document.getElementById('lightboxImg');
+  img.src = url;
+  img.className = 'fit-screen';
+  ['lbFit','lbOriginal','lbZoomIn'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('lbFit').classList.add('active');
   document.getElementById('lightbox').classList.add('show');
+  document.getElementById('lightbox').scrollTop = 0;
 }
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('show');
 }
+document.getElementById('lbFit').addEventListener('click', (e) => { e.stopPropagation(); setLightboxZoom('fit'); });
+document.getElementById('lbOriginal').addEventListener('click', (e) => { e.stopPropagation(); setLightboxZoom('original'); });
+document.getElementById('lbZoomIn').addEventListener('click', (e) => { e.stopPropagation(); setLightboxZoom('zoomin'); });
 
 // ── 토글 ──────────────────────────────────────────
 function buildToggle(label, content) {
