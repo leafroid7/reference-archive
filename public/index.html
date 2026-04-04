@@ -250,18 +250,18 @@ function renderGallery(pages) {
     const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '(제목 없음)';
     const brand = props['브랜드명']?.select?.name || '';
     const date = props['날짜']?.date?.start || '';
-    const copyType = props['카피 유형']?.select?.name || '';
+    const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
     const insight = props['인사이트 (내가 배운 것)']?.rich_text?.map(t => t.plain_text).join('') || '';
     const tags = props['태그']?.multi_select?.map(t => t.name) || [];
     const media = extractMedia(page.blocks || []);
     
     return `
-      <div class="card" data-page-id="${page.id}" onclick="openModal('${page.id}')">
+      <div class="card" data-page-id="${page.id}" onclick="openModal(this.dataset.pageId)">
         <div class="card-media">${buildMediaHTML(media)}</div>
         <div class="card-body">
           <div>
             ${brand ? `<span class="card-brand">${brand}</span>` : ''}
-            ${copyType ? `<span class="card-type">${copyType}</span>` : ''}
+            ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
           </div>
           <div class="card-title">${title}</div>
           <div class="card-date">${date}</div>
@@ -280,7 +280,7 @@ function openModal(pageId) {
   const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
   const brand = props['브랜드명']?.select?.name || '';
   const date = props['날짜']?.date?.start || '';
-  const copyType = props['카피 유형']?.select?.name || '';
+  const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
   const brandOverview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
   const campaign = props['주목할 캠페인/콘텐츠']?.rich_text?.map(t => t.plain_text).join('') || '';
   const idea = props['적용해 볼 아이디어']?.rich_text?.map(t => t.plain_text).join('') || '';
@@ -293,7 +293,7 @@ function openModal(pageId) {
   document.getElementById('modalBody').innerHTML = `
     <div style="margin-bottom:8px">
       ${brand ? `<span class="card-brand">${brand}</span>` : ''}
-      ${copyType ? `<span class="card-type">${copyType}</span>` : ''}
+      ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
     </div>
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">${title}</h2>
     <div style="font-size:13px;color:#aaa;margin-bottom:16px">${date}</div>
