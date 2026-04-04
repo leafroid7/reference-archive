@@ -221,15 +221,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// 갤러리 클릭 이벤트 위임 (PC 모달 문제 해결 핵심)
-document.getElementById('gallery').addEventListener('click', (e) => {
-  const card = e.target.closest('.card');
-  if (!card) return;
-  // 반응 버튼 클릭 시 모달 열지 않음
-  if (e.target.closest('.card-reactions')) return;
-  openModal(card.dataset.pageId);
-});
-
 // ── 데이터 로드 ──────────────────────────────────────────
 async function loadBrands() {
   try {
@@ -315,6 +306,7 @@ function buildReactionHTML(pageId) {
 }
 
 document.getElementById('gallery').addEventListener('click', (e) => {
+  // 반응 버튼
   const rb = e.target.closest('.reaction-btn');
   if (rb) {
     e.stopPropagation();
@@ -331,6 +323,7 @@ document.getElementById('gallery').addEventListener('click', (e) => {
     if (card) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
     return;
   }
+  // 이모지 추가 버튼
   const ab = e.target.closest('.add-reaction-btn');
   if (ab) {
     e.stopPropagation();
@@ -345,6 +338,9 @@ document.getElementById('gallery').addEventListener('click', (e) => {
     picker.classList.toggle('show');
     return;
   }
+  // 카드 클릭 → 모달 열기
+  const card = e.target.closest('.card');
+  if (card) openModal(card.dataset.pageId);
 });
 
 document.getElementById('emojiPicker').addEventListener('click', (e) => {
