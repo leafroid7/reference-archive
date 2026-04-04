@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
         const r = await notion.blocks.children.list({ block_id: blockId });
         const results = await Promise.all(
           r.results.map(async (block) => {
-            if (block.has_children && (block.type === 'column_list' || block.type === 'column')) {
+            if (block.has_children && (block.type === 'column_list' || block.type === 'column' || block.type === 'toggle')) {
               block.children = await fetchBlocksRecursive(block.id);
             }
             return block;

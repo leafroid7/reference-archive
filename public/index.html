@@ -41,7 +41,7 @@
     .card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
     .card-date { font-size: 11px; color: #bbb; margin-bottom: 8px; }
     .card-overview-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 3px; }
-    .card-overview { font-size: 13px; color: #555; line-height: 1.5; }
+    .card-overview { font-size: 13px; color: #555; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .card-tags { padding: 6px 16px 10px; display: flex; flex-wrap: wrap; gap: 4px; }
     .tag { font-size: 11px; color: #888; background: #f5f5f5; padding: 2px 8px; border-radius: 20px; }
     .card-reactions { padding: 10px 16px; border-top: 1px solid #f5f5f5; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
@@ -244,7 +244,7 @@
 const API_BASE = '/api/notion';
 const DEFAULT_REACTIONS = ['❤️', '👍', '👏', '🔥', '💡'];
 const EXTRA_EMOJIS = ['😍', '🎯', '👀', '💎', '🙌', '✨', '📊', '😮', '📌', '💬'];
-const EDIT_CODE = 'underdogvibe2024';
+const EDIT_CODE = 'underdogvibe';
 
 let allPages = [];
 let reactionData = JSON.parse(localStorage.getItem('reactions') || '{}');
@@ -445,6 +445,16 @@ function extractBodyText(blocks) {
       lines.push(`<div class="block-numbered">${getText(block, 'numbered_list_item')}</div>`);
     } else if (type === 'quote') {
       lines.push(`<div class="block-quote">${getText(block, 'quote')}</div>`);
+    } else if (type === 'toggle') {
+      const toggleLabel = getText(block, 'toggle');
+      const innerContent = block.children ? extractBodyText(block.children) : '';
+      const tid = 'tg_' + Math.random().toString(36).slice(2);
+      lines.push(`<div class="toggle-section" style="margin:4px 0;">
+        <button class="toggle-header" data-toggle="${tid}" style="font-size:13px;padding:8px 12px;">
+          <span>${toggleLabel}</span><span class="toggle-arrow" id="arr_${tid}">▼</span>
+        </button>
+        <div class="toggle-body" id="${tid}">${innerContent}</div>
+      </div>`);
     } else if (type === 'column_list' || type === 'column') {
       if (block.children) lines.push(extractBodyText(block.children));
     }
