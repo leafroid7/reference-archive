@@ -3,6 +3,15 @@ const { Client } = require('@notionhq/client');
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 
+// 동일 인스턴스 내 race condition 완화용 직렬화 큐
+const reactionLocks = new Map();
+async function withReactionLock(pageId, fn) {
+  const prev = reactionLocks.get(pageId) || Promise.resolve();
+  const next = prev.then(() => fn()).catch(() => fn());
+  reactionLocks.set(pageId, next.catch(() => {}));
+  return next;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
@@ -160,6 +169,30 @@ module.exports = async (req, res) => {
 
       await notion.pages.update({ page_id: pageId, properties: updateProps });
       res.json({ success: true });
+
+    } else if (action === 'updateReaction') {
+      const body = await new Promise((resolve) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => resolve(JSON.parse(data)));
+      });
+      const { pageId, delta } = body;
+      if (!pageId || typeof delta !== 'number') {
+        return res.status(400).json({ error: 'pageId and delta required' });
+      }
+
+      const newTotal = await withReactionLock(pageId, async () => {
+        const page = await notion.pages.retrieve({ page_id: pageId });
+        const current = page.properties['공감수']?.number ?? 0;
+        const updated = Math.max(0, current + delta);
+        await notion.pages.update({
+          page_id: pageId,
+          properties: { '공감수': { number: updated } }
+        });
+        return updated;
+      });
+
+      res.json({ success: true, total: newTotal });
 
     } else if (action === 'getBrands') {
       const db = await notion.databases.retrieve({ database_id: DATABASE_ID });

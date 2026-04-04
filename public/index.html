@@ -430,6 +430,27 @@ let currentModalPageId = null;
 
 function saveReactions() { localStorage.setItem('reactions', JSON.stringify(reactionData)); }
 
+async function syncReactionToNotion(pageId, delta) {
+  try {
+    const res = await fetch('/api/notion?action=updateReaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pageId, delta })
+    });
+    const data = await res.json();
+    if (data.success && typeof data.total === 'number') {
+      // allPages 캐시 업데이트 → 이후 getTotalReactions가 올바른 값 반환
+      const page = allPages.find(p => p._id === pageId);
+      if (page) {
+        if (!page.properties['공감수']) page.properties['공감수'] = { number: 0 };
+        page.properties['공감수'].number = data.total;
+      }
+    }
+  } catch (e) {
+    console.warn('공감 Notion 동기화 실패:', e);
+  }
+}
+
 // ── 편집 모드 ──────────────────────────────────────────
 function activateEditMode() {
   isEditMode = true;
@@ -833,6 +854,11 @@ function extractBodyText(blocks) {
 
 // ── 반응 이모지 ──────────────────────────────────────────
 function getTotalReactions(pageId) {
+  // Notion 공감수 속성값이 있으면 우선 사용 (기기 통합 집계)
+  const page = allPages.find(p => p._id === pageId);
+  const notionTotal = page?.properties?.['공감수']?.number;
+  if (typeof notionTotal === 'number') return notionTotal;
+  // fallback: localStorage 합산 (Notion 속성 미설정 시)
   const r = reactionData[pageId] || {};
   return Object.entries(r)
     .filter(([k, v]) => !k.startsWith('_user_') && typeof v === 'number')
@@ -863,10 +889,12 @@ document.getElementById('gallery').addEventListener('click', (e) => {
     const pageId = rb.dataset.page, emoji = rb.dataset.emoji;
     if (!reactionData[pageId]) reactionData[pageId] = {};
     const uk = `_user_${emoji}`, had = reactionData[pageId][uk];
-    reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (had ? -1 : 1);
+    const delta = had ? -1 : 1;
+    reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + delta;
     if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
     reactionData[pageId][uk] = !had;
     saveReactions();
+    syncReactionToNotion(pageId, delta);
     rb.closest('.card')?.querySelector('.card-reactions')?.setOf?.();
     const card = rb.closest('.card');
     if (card) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
@@ -901,10 +929,12 @@ document.getElementById('emojiPicker').addEventListener('click', e => {
   document.getElementById('emojiPicker').classList.remove('show');
   if (!reactionData[pageId]) reactionData[pageId] = {};
   const uk = `_user_${emoji}`, had = reactionData[pageId][uk];
-  reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (had ? -1 : 1);
+  const delta = had ? -1 : 1;
+  reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + delta;
   if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
   reactionData[pageId][uk] = !had;
   saveReactions();
+  syncReactionToNotion(pageId, delta);
   document.querySelectorAll('.card').forEach(card => {
     if (card.dataset.pageId === pageId)
       card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
