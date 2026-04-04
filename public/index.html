@@ -58,7 +58,8 @@
 
     /* 모달 본체 */
     .modal-wrap { position: relative; width: 100%; max-width: 960px; }
-    .modal-close { position: absolute; top: -36px; right: 0; font-size: 22px; cursor: pointer; color: white; z-index: 10; line-height: 1; background: none; border: none; }
+    .modal-close { position: absolute; top: 14px; right: 14px; font-size: 16px; cursor: pointer; color: #888; z-index: 10; line-height: 1; background: #f0f0f0; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+    .modal-close:hover { background: #e0e0e0; color: #333; }
     .modal { background: white; border-radius: 16px; overflow: hidden; display: flex; max-height: 85vh; }
 
     /* 모달 좌측: 캐러셀 */
@@ -85,10 +86,11 @@
     .carousel-dot.active { background: white; }
 
     /* 이미지 확대 */
-    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; align-items: center; justify-content: center; cursor: zoom-out; }
-    .lightbox.show { display: flex !important; }
-    .lightbox img { max-width: 92vw; max-height: 92vh; object-fit: contain; border-radius: 4px; }
-    .lightbox-close { position: absolute; top: 16px; right: 20px; color: white; font-size: 28px; cursor: pointer; background: none; border: none; }
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; overflow-y: auto; cursor: zoom-out; }
+    .lightbox.show { display: block !important; }
+    .lightbox-inner { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 56px 24px; box-sizing: border-box; }
+    .lightbox img { max-width: min(1200px, 96vw); width: auto; height: auto; border-radius: 4px; display: block; cursor: default; }
+    .lightbox-close { position: fixed; top: 14px; right: 18px; color: white; font-size: 18px; cursor: pointer; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; z-index: 100000; }
 
     /* 모달 우측 */
     .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; }
@@ -149,7 +151,6 @@
 <!-- 모달 -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-wrap">
-    <button class="modal-close" id="modalCloseBtn">✕</button>
     <div class="modal" id="modal">
       <div class="modal-left" id="modalLeft">
         <div class="carousel" id="carousel">
@@ -162,7 +163,9 @@
           <div class="carousel-dots" id="carouselDots"></div>
         </div>
       </div>
-      <div class="modal-right" id="modalRight"></div>
+      <div class="modal-right" id="modalRight" style="position:relative;">
+        <button class="modal-close" id="modalCloseBtn">✕</button>
+      </div>
     </div>
   </div>
 </div>
@@ -170,7 +173,9 @@
 <!-- 라이트박스 -->
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose">✕</button>
-  <img id="lightboxImg" src="" alt="">
+  <div class="lightbox-inner">
+    <img id="lightboxImg" src="" alt="">
+  </div>
 </div>
 
 <!-- 이모지 피커 -->
@@ -192,7 +197,6 @@ function saveReactions() { localStorage.setItem('reactions', JSON.stringify(reac
 
 // ── 이벤트 바인딩 ──────────────────────────────────────────
 // 모달 닫기
-document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', (e) => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
@@ -211,20 +215,24 @@ carousel.addEventListener('touchend', (e) => {
   if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
 });
 
-// 캐러셀 마우스 드래그 스와이프 (PC)
+// 캐러셀 마우스 드래그 스와이프 (PC) - document 레벨 위임
 let mouseStartX = 0;
 let isDragging = false;
-carousel.addEventListener('mousedown', (e) => { mouseStartX = e.clientX; isDragging = true; });
-carousel.addEventListener('mouseup', (e) => {
+document.addEventListener('mousedown', (e) => {
+  if (e.target.closest('#carousel')) { mouseStartX = e.clientX; isDragging = true; }
+});
+document.addEventListener('mouseup', (e) => {
   if (!isDragging) return;
   isDragging = false;
   const diff = mouseStartX - e.clientX;
   if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
 });
-carousel.addEventListener('mouseleave', () => { isDragging = false; });
+document.addEventListener('mouseleave', () => { isDragging = false; });
 
 // 라이트박스
-document.getElementById('lightbox').addEventListener('click', closeLightbox);
+document.getElementById('lightbox').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('lightbox') || e.target.classList.contains('lightbox-inner')) closeLightbox();
+});
 document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
 
 // 이모지 피커 닫기
@@ -542,7 +550,9 @@ function openModal(pageId) {
   const hasTypes = copyTypes.length > 0;
   const divider = hasBrand && hasTypes ? '<span class="modal-badge-divider"></span>' : '';
 
-  document.getElementById('modalRight').innerHTML = `
+  // 닫기 버튼은 innerHTML 덮어써도 유지되도록 별도 삽입
+  const rightEl = document.getElementById('modalRight');
+  rightEl.innerHTML = `<button class="modal-close" id="modalCloseBtn">✕</button>
     <div class="modal-badge-row">
       ${brand ? `<span style="font-size:11px;color:#aaa;font-weight:600;">브랜드명</span><span class="card-brand">${brand}</span>` : ''}
       ${divider}
@@ -558,6 +568,7 @@ function openModal(pageId) {
     ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
   `;
 
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
   const overlay = document.getElementById('modalOverlay');
   overlay.style.display = 'flex';
 }
