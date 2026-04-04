@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
       const pages = await Promise.all(
         response.results.map(async (page) => {
           const blocks = await notion.blocks.children.list({ block_id: page.id });
-          return { ...page, blocks: blocks.results };
+          return { ...page, _id: page.id.replace(/-/g, ''), blocks: blocks.results };
         })
       );
 
