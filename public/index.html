@@ -80,7 +80,7 @@
     .add-reaction-btn { padding: 3px 9px; border: 1px dashed #ddd; border-radius: 20px; background: white; cursor: pointer; font-size: 15px; color: #bbb; }
 
     /* 이모지 피커 */
-    .emoji-picker { display: none; position: fixed; background: white; border: 1px solid #eee; border-radius: 12px; padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 500; flex-wrap: wrap; gap: 6px; width: 220px; }
+    .emoji-picker { display: none; position: fixed; background: white; border: 1px solid #eee; border-radius: 12px; padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 99998; flex-wrap: wrap; gap: 6px; width: 220px; }
     .emoji-picker.show { display: flex; }
     .emoji-option { font-size: 20px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
     .emoji-option:hover { background: #f5f5f5; }
@@ -839,14 +839,26 @@ function extractBodyText(blocks) {
 }
 
 // ── 반응 이모지 ──────────────────────────────────────────
+function getTotalReactions(pageId) {
+  const r = reactionData[pageId] || {};
+  return Object.entries(r)
+    .filter(([k, v]) => !k.startsWith('_user_') && typeof v === 'number')
+    .reduce((sum, [, v]) => sum + v, 0);
+}
+
 function buildReactionHTML(pageId) {
   const r = reactionData[pageId] || {};
-  let html = DEFAULT_REACTIONS.map(emoji => {
+  // DEFAULT + 커스텀 이모지 모두 포함
+  const allEmojis = [...DEFAULT_REACTIONS, ...Object.keys(r).filter(k => !k.startsWith('_user_') && !DEFAULT_REACTIONS.includes(k))];
+  let html = allEmojis.map(emoji => {
     const count = r[emoji] || 0;
+    if (!count && !DEFAULT_REACTIONS.includes(emoji)) return '';
     const active = r[`_user_${emoji}`] ? 'active' : '';
     return `<button class="reaction-btn ${active}" data-page="${pageId}" data-emoji="${emoji}">${emoji}<span class="reaction-count">${count||''}</span></button>`;
   }).join('');
   html += `<button class="add-reaction-btn" data-page="${pageId}">+</button>`;
+  const total = getTotalReactions(pageId);
+  if (total > 0) html += `<span style="margin-left:auto;font-size:11px;color:#bbb;padding:0 4px;">총 ${total}</span>`;
   return html;
 }
 
@@ -1274,8 +1286,9 @@ async function saveMediaOrder(pageId) {
 
 // ── 모달 열기 ──────────────────────────────────────────
 function openModal(pageId) {
+  try {
   const page = allPages.find(p => p._id === pageId);
-  if (!page) return;
+  if (!page) { console.warn('openModal: page not found', pageId); return; }
   currentModalPageId = pageId;
   const props = page.properties;
   const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
@@ -1328,6 +1341,7 @@ function openModal(pageId) {
   document.getElementById('modalOverlay').style.display = 'flex';
   // 편집 모드 미디어 드래그 초기화
   if (isEditMode) setTimeout(() => initEditMediaDrag(pageId), 50);
+  } catch(err) { console.error('openModal error:', err); }
 }
 
 function buildEditableToggle(label, value, fieldKey, pageId) {
