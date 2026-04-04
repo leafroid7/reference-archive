@@ -105,6 +105,38 @@ module.exports = async (req, res) => {
 
       res.json({ success: true, pageId: newPage.id });
 
+    } else if (action === 'updateMedia') {
+      const body = await new Promise((resolve) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => resolve(JSON.parse(data)));
+      });
+      const { pageId, mediaUrls = [] } = body;
+
+      // 기존 블록 목록 가져와서 미디어 블록 ID 수집
+      const existingBlocks = await notion.blocks.children.list({ block_id: pageId });
+      const mediaBlockIds = existingBlocks.results
+        .filter(b => ['image','video','embed','bookmark'].includes(b.type))
+        .map(b => b.id);
+
+      // 기존 미디어 블록 삭제
+      await Promise.all(mediaBlockIds.map(id => notion.blocks.update({ block_id: id, archived: true })));
+
+      // 새 순서로 블록 추가
+      if (mediaUrls.length > 0) {
+        const getYouTubeId = (url) => {
+          const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          return m ? m[1] : null;
+        };
+        const children = mediaUrls.map(url => {
+          const ytId = getYouTubeId(url);
+          if (ytId) return { object: 'block', type: 'embed', embed: { url: `https://www.youtube.com/watch?v=${ytId}` } };
+          return { object: 'block', type: 'image', image: { type: 'external', external: { url } } };
+        });
+        await notion.blocks.children.append({ block_id: pageId, children });
+      }
+      res.json({ success: true });
+
     } else if (action === 'updatePage') {
       const body = await new Promise((resolve) => {
         let data = '';

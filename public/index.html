@@ -130,6 +130,23 @@
     .inline-save-btn { padding: 5px 14px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
     .inline-cancel-btn { padding: 5px 10px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 12px; }
 
+    /* 편집 모드 미디어 관리 */
+    .edit-media-section { margin-top: 16px; border-top: 1px solid #f0f0f0; padding-top: 14px; }
+    .edit-media-section label { font-size: 11px; color: #aaa; font-weight: 600; display: block; margin-bottom: 8px; }
+    .edit-media-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+    .edit-media-item { display: flex; align-items: center; gap: 6px; background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 6px 10px; cursor: grab; }
+    .edit-media-item.dragging { opacity: 0.4; }
+    .edit-media-item.drag-over { border-top: 2px solid #aaa; }
+    .edit-media-thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; background: #111; flex-shrink: 0; }
+    .edit-media-url { flex: 1; font-size: 11px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .edit-media-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; }
+    .edit-media-remove:hover { color: #e55; }
+    .edit-media-add-input { display: flex; gap: 6px; }
+    .edit-media-add-input input { flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+    .edit-media-add-btn { padding: 7px 12px; background: #f0f0f0; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; color: #555; }
+    .edit-media-add-btn:hover { background: #e5e5e5; }
+    .edit-media-save-btn { width: 100%; margin-top: 8px; padding: 8px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+
     /* 잠금 해제 모달 */
     .unlock-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; align-items: center; justify-content: center; }
     .unlock-overlay.show { display: flex !important; }
@@ -191,7 +208,7 @@
     .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 100; display: none; padding: 6px; }
     .autocomplete-list.show { display: block; }
     .autocomplete-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; font-size: 13px; border-radius: 7px; transition: background 0.12s; }
-    .autocomplete-item:hover { background: #f5f5f5; }
+    .autocomplete-item:hover { background: rgba(254,240,138,0.35); }
     .autocomplete-item .ac-hint { font-size: 11px; color: #bbb; display: none; }
     .autocomplete-item:hover .ac-hint { display: inline; }
     .autocomplete-new { color: #3b82f6; font-style: italic; }
@@ -284,7 +301,7 @@
 <!-- 카드 추가 모달 -->
 <div class="add-card-overlay" id="addCardOverlay">
   <div class="add-card-modal">
-    <h3>➕ 새 카드 추가</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h3 style="margin-bottom:0;">➕ 새 카드 추가</h3><button onclick="document.getElementById('addCardOverlay').classList.remove('show')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#bbb;line-height:1;">✕</button></div>
     <div class="add-field">
       <label>콘텐츠 제목 *</label>
       <input id="ac-title" type="text" placeholder="제목을 입력하세요">
@@ -562,7 +579,7 @@ function extractFirstMedia(blocks) {
 function buildCardMediaHTML(media) {
   if (!media) return '<div class="no-media">미디어 없음</div>';
   if (media.type === 'image') return `<img src="${media.url}" loading="lazy" alt="">`;
-  if (media.type === 'youtube') return `<div class="video-thumb"><div class="play-icon">▶</div></div>`;
+  if (media.type === 'youtube') return `<div class="video-thumb" style="position:relative;width:100%;height:100%;"><img src="https://img.youtube.com/vi/${media.id}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;" alt="" onerror="this.style.display='none'"><div class="play-icon" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">▶</div></div>`;
   if (media.type === 'video') return `<div class="video-thumb"><div class="play-icon">▶</div></div>`;
   if (media.type === 'embed') return `<div class="video-thumb"><div class="play-icon">▶</div></div>`;
   return '<div class="no-media">미디어 없음</div>';
@@ -919,6 +936,126 @@ async function saveInlineEdit(id, fieldKey, pageId) {
   }
 }
 
+
+// ── 편집 모드 미디어 관리 ──────────────────────────────────────────
+function buildEditMediaSection(mediaItems, pageId) {
+  const items = mediaItems.map((m, i) => {
+    let thumb = '';
+    let label = '';
+    if (m.type === 'image') {
+      thumb = `<img class="edit-media-thumb" src="${m.url}" alt="">`;
+      label = m.url.length > 40 ? m.url.slice(0, 40) + '...' : m.url;
+    } else if (m.type === 'youtube') {
+      thumb = `<img class="edit-media-thumb" src="https://img.youtube.com/vi/${m.id}/default.jpg" alt="">`;
+      label = `youtube: ${m.id}`;
+    } else {
+      thumb = `<div class="edit-media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:16px;">▶</div>`;
+      label = m.url ? (m.url.length > 40 ? m.url.slice(0,40)+'...' : m.url) : 'media';
+    }
+    return `<div class="edit-media-item" draggable="true" data-index="${i}" data-page="${pageId}">
+      <span style="color:#ccc;cursor:grab;font-size:14px;user-select:none;">⠿</span>
+      ${thumb}
+      <span class="edit-media-url">${label}</span>
+      <button class="edit-media-remove" onclick="removeEditMedia(this, '${pageId}')">✕</button>
+    </div>`;
+  }).join('');
+
+  return `<div class="edit-media-section">
+    <label>미디어 순서 편집</label>
+    <div class="edit-media-list" id="editMediaList_${pageId}">${items}</div>
+    <div class="edit-media-add-input">
+      <input type="text" id="editMediaNewUrl_${pageId}" placeholder="이미지 URL 또는 유튜브 링크 추가">
+      <button class="edit-media-add-btn" onclick="addEditMedia('${pageId}')">추가</button>
+    </div>
+    <button class="edit-media-save-btn" onclick="saveMediaOrder('${pageId}')">미디어 순서 저장</button>
+  </div>`;
+}
+
+function initEditMediaDrag(pageId) {
+  const list = document.getElementById(`editMediaList_${pageId}`);
+  if (!list) return;
+  list.querySelectorAll('.edit-media-item').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => item.classList.add('dragging'), 0);
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('drag-over'); });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const dragging = list.querySelector('.edit-media-item.dragging');
+      if (dragging && dragging !== item) {
+        const items = [...list.children];
+        const fromIdx = items.indexOf(dragging);
+        const toIdx = items.indexOf(item);
+        if (fromIdx < toIdx) list.insertBefore(dragging, item.nextSibling);
+        else list.insertBefore(dragging, item);
+      }
+    });
+  });
+}
+
+function removeEditMedia(btn, pageId) {
+  btn.closest('.edit-media-item').remove();
+}
+
+function addEditMedia(pageId) {
+  const input = document.getElementById(`editMediaNewUrl_${pageId}`);
+  const url = input.value.trim();
+  if (!url) return;
+  const list = document.getElementById(`editMediaList_${pageId}`);
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  const ytId = ytMatch ? ytMatch[1] : null;
+  const item = document.createElement('div');
+  item.className = 'edit-media-item';
+  item.draggable = true;
+  item.dataset.page = pageId;
+  item.dataset.newUrl = url;
+  const thumb = ytId
+    ? `<img class="edit-media-thumb" src="https://img.youtube.com/vi/${ytId}/default.jpg" alt="">`
+    : `<img class="edit-media-thumb" src="${url}" alt="" onerror="this.style.background='#eee'">`;
+  const label = ytId ? `youtube: ${ytId}` : (url.length > 40 ? url.slice(0,40)+'...' : url);
+  item.innerHTML = `<span style="color:#ccc;cursor:grab;font-size:14px;user-select:none;">⠿</span>${thumb}<span class="edit-media-url">${label}</span><button class="edit-media-remove" onclick="removeEditMedia(this,'${pageId}')">✕</button>`;
+  list.appendChild(item);
+  initEditMediaDrag(pageId);
+  input.value = '';
+}
+
+async function saveMediaOrder(pageId) {
+  const list = document.getElementById(`editMediaList_${pageId}`);
+  if (!list) return;
+  const items = [...list.querySelectorAll('.edit-media-item')];
+  const mediaUrls = items.map(item => {
+    if (item.dataset.newUrl) return item.dataset.newUrl;
+    const img = item.querySelector('img.edit-media-thumb');
+    if (!img) return null;
+    const src = img.src;
+    // youtube 썸네일에서 id 추출
+    const ytMatch = src.match(/img\.youtube\.com\/vi\/([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) return `https://www.youtube.com/watch?v=${ytMatch[1]}`;
+    return src;
+  }).filter(Boolean);
+
+  const rawId = pageId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+  const saveBtn = list.parentElement.querySelector('.edit-media-save-btn');
+  saveBtn.textContent = '저장 중...'; saveBtn.disabled = true;
+  try {
+    const res = await fetch('/api/notion?action=updateMedia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pageId: rawId, mediaUrls })
+    });
+    if (!res.ok) throw new Error('저장 실패');
+    await loadPages();
+    openModal(pageId);
+  } catch(err) {
+    alert('미디어 저장 오류: ' + err.message);
+    saveBtn.textContent = '미디어 순서 저장'; saveBtn.disabled = false;
+  }
+}
+
 // ── 모달 열기 ──────────────────────────────────────────
 function openModal(pageId) {
   const page = allPages.find(p => p._id === pageId);
@@ -968,10 +1105,13 @@ function openModal(pageId) {
                                   : buildToggle('인사이트 (내가 배운 것)', insight)}
     ${buildToggle('📄 본문 내용', bodyText)}
     ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
+    ${eb ? buildEditMediaSection(mediaItems, pageId) : ''}
   `;
 
   document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
   document.getElementById('modalOverlay').style.display = 'flex';
+  // 편집 모드 미디어 드래그 초기화
+  if (isEditMode) setTimeout(() => initEditMediaDrag(pageId), 50);
 }
 
 function buildEditableToggle(label, value, fieldKey, pageId) {
