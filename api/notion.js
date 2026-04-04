@@ -6,7 +6,7 @@ const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const { action, filter_brand, filter_date_start, filter_date_end } = req.query;
+  const { action, filter_brand, filter_date_start, filter_date_end, page_size, start_cursor } = req.query;
 
   try {
     if (action === 'getPages') {
