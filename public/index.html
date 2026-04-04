@@ -287,9 +287,9 @@ function extractFirstMedia(blocks) {
 function buildCardMediaHTML(media) {
   if (!media) return '<div class="no-media">미디어 없음</div>';
   if (media.type === 'image') return `<img src="${media.url}" loading="lazy" alt="">`;
-  if (media.type === 'youtube') return `<iframe src="https://www.youtube.com/embed/${media.id}" allowfullscreen></iframe>`;
-  if (media.type === 'video') return `<video src="${media.url}" controls style="width:100%"></video>`;
-  if (media.type === 'embed') return `<iframe src="${media.url}" allowfullscreen style="aspect-ratio:16/9"></iframe>`;
+  if (media.type === 'youtube') return `<div style="position:relative;"><iframe src="https://www.youtube.com/embed/${media.id}" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;display:block;"></iframe><div style="position:absolute;inset:0;cursor:pointer;"></div></div>`;
+  if (media.type === 'video') return `<div style="position:relative;"><video src="${media.url}" controls style="width:100%"></video><div style="position:absolute;inset:0;cursor:pointer;"></div></div>`;
+  if (media.type === 'embed') return `<div style="position:relative;"><iframe src="${media.url}" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;display:block;"></iframe><div style="position:absolute;inset:0;cursor:pointer;"></div></div>`;
   return '<div class="no-media">미디어 없음</div>';
 }
 
