@@ -188,15 +188,21 @@
 
     /* 브랜드명 자동완성 */
     .autocomplete-wrap { position: relative; }
-    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; max-height: 180px; overflow-y: auto; display: none; }
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 100; display: none; padding: 6px; }
     .autocomplete-list.show { display: block; }
-    .autocomplete-item { padding: 9px 12px; cursor: pointer; font-size: 14px; }
-    .autocomplete-item:hover, .autocomplete-item.selected { background: #f5f5f5; }
+    .autocomplete-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; font-size: 13px; border-radius: 7px; transition: background 0.12s; }
+    .autocomplete-item:hover { background: #f5f5f5; }
+    .autocomplete-item .ac-hint { font-size: 11px; color: #bbb; display: none; }
+    .autocomplete-item:hover .ac-hint { display: inline; }
     .autocomplete-new { color: #3b82f6; font-style: italic; }
+    .autocomplete-new .ac-hint { color: #93c5fd; }
 
     /* 이미지 URL 입력 */
     .media-url-list { margin-top: 6px; }
-    .media-url-item { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+    .media-url-item { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; cursor: grab; }
+    .media-url-item.dragging { opacity: 0.4; }
+    .media-url-item.drag-over { border-top: 2px solid #aaa; }
+    .drag-handle { color: #ccc; font-size: 16px; cursor: grab; padding: 0 2px; user-select: none; }
     .media-url-item input { flex: 1; }
     .media-url-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 16px; padding: 0 4px; }
     .media-url-remove:hover { color: #e55; }
@@ -295,8 +301,9 @@
       <input id="ac-date" type="date">
     </div>
     <div class="add-field">
-      <label>카피 유형 (쉼표로 구분)</label>
-      <input id="ac-copytypes" type="text" placeholder="예: 제품 강조형, 신규 런칭형">
+      <label>카피 유형</label>
+      <div id="ac-copytypes-wrap" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 0;"></div>
+      <input type="hidden" id="ac-copytypes">
     </div>
     <div class="add-field">
       <label>브랜드 개요</label>
@@ -324,12 +331,7 @@
     </div>
     <div class="add-field">
       <label>이미지/영상 URL</label>
-      <div class="media-url-list" id="mediaUrlList">
-        <div class="media-url-item">
-          <input type="text" placeholder="이미지 URL 또는 유튜브 링크">
-          <button class="media-url-remove">✕</button>
-        </div>
-      </div>
+      <div class="media-url-list" id="mediaUrlList"></div>
       <button class="media-url-add" onclick="addMediaUrlField()">+ URL 추가</button>
     </div>
     <div class="add-actions">
@@ -467,6 +469,29 @@ async function loadBrands() {
   } catch(e) { console.error(e); }
 }
 
+
+// ── 카피 유형 버튼 선택 ──────────────────────────────────────────
+let allCopyTypes = [];
+let selectedCopyTypes = new Set();
+
+function renderCopyTypeButtons(selected) {
+  selectedCopyTypes = new Set(selected);
+  const wrap = document.getElementById('ac-copytypes-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = allCopyTypes.map(ct => {
+    const sel = selectedCopyTypes.has(ct);
+    return `<button type="button" onclick="toggleCopyType('${ct}')"
+      style="padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid ${sel?'#3b82f6':'#ddd'};background:${sel?'#eff6ff':'white'};color:${sel?'#3b82f6':'#666'};transition:all 0.15s;">${ct}</button>`;
+  }).join('');
+  document.getElementById('ac-copytypes').value = [...selectedCopyTypes].join(',');
+}
+
+function toggleCopyType(ct) {
+  if (selectedCopyTypes.has(ct)) selectedCopyTypes.delete(ct);
+  else selectedCopyTypes.add(ct);
+  renderCopyTypeButtons([...selectedCopyTypes]);
+}
+
 async function loadPages(brandFilter='', dateStart='', dateEnd='') {
   document.getElementById('gallery').innerHTML = '<div class="loading">로딩 중...</div>';
   try {
@@ -477,6 +502,10 @@ async function loadPages(brandFilter='', dateStart='', dateEnd='') {
     const res = await fetch(url);
     const data = await res.json();
     allPages = (data.pages || []).map(p => ({ ...p, _id: p.id.replace(/-/g, '') }));
+    // 카피 유형 목록 동기화
+    const ctSet = new Set();
+    allPages.forEach(p => (p.properties['카피 유형']?.multi_select || []).forEach(t => ctSet.add(t.name)));
+    allCopyTypes = [...ctSet];
     renderGallery(allPages);
   } catch(e) {
     document.getElementById('gallery').innerHTML = `<div class="error">데이터 로드 실패: ${e.message}</div>`;
@@ -1007,10 +1036,10 @@ document.getElementById('ac-brand').addEventListener('input', function() {
   if (!val) { list.classList.remove('show'); return; }
   const matches = allBrandNames.filter(b => b.toLowerCase().includes(val));
   const isExact = allBrandNames.some(b => b.toLowerCase() === val);
-  let html = matches.map(b => `<div class="autocomplete-item" onclick="selectBrand('${b}')">${b}</div>`).join('');
-  if (!isExact) html += `<div class="autocomplete-item autocomplete-new" onclick="selectBrand('${document.getElementById('ac-brand').value.trim()}')">+ "${document.getElementById('ac-brand').value.trim()}" 새로 추가</div>`;
+  let html = matches.map(b => `<div class="autocomplete-item" onclick="selectBrand('${b}')"><span>${b}</span><span class="ac-hint">선택하기</span></div>`).join('');
+  if (!isExact && val) html += `<div class="autocomplete-item autocomplete-new" onclick="selectBrand('${this.value.trim()}')"><span>+ "${this.value.trim()}" 새로 추가</span><span class="ac-hint">선택하기</span></div>`;
   list.innerHTML = html;
-  list.classList.toggle('show', html.length > 0);
+  list.classList.toggle('show', matches.length > 0 || !isExact);
 });
 
 document.addEventListener('click', e => {
@@ -1022,28 +1051,52 @@ function selectBrand(name) {
   document.getElementById('brandAutocomplete').classList.remove('show');
 }
 
-function addMediaUrlField() {
-  const list = document.getElementById('mediaUrlList');
+function createMediaItem(value = '') {
   const item = document.createElement('div');
   item.className = 'media-url-item';
-  item.innerHTML = '<input type="text" placeholder="이미지 URL 또는 유튜브 링크"><button class="media-url-remove">✕</button>';
+  item.draggable = true;
+  item.innerHTML = `<span class="drag-handle">⠿</span><input type="text" placeholder="이미지 URL 또는 유튜브 링크" value="${value}"><button class="media-url-remove">✕</button>`;
   item.querySelector('.media-url-remove').addEventListener('click', () => item.remove());
-  list.appendChild(item);
+
+  // 드래그 정렬
+  item.addEventListener('dragstart', e => {
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => item.classList.add('dragging'), 0);
+  });
+  item.addEventListener('dragend', () => item.classList.remove('dragging'));
+  item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('drag-over'); });
+  item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+  item.addEventListener('drop', e => {
+    e.preventDefault();
+    item.classList.remove('drag-over');
+    const dragging = document.querySelector('.media-url-item.dragging');
+    if (dragging && dragging !== item) {
+      const list = document.getElementById('mediaUrlList');
+      const items = [...list.children];
+      const fromIdx = items.indexOf(dragging);
+      const toIdx = items.indexOf(item);
+      if (fromIdx < toIdx) list.insertBefore(dragging, item.nextSibling);
+      else list.insertBefore(dragging, item);
+    }
+  });
+  return item;
 }
 
-// 기존 remove 버튼 바인딩
-document.querySelectorAll('.media-url-remove').forEach(btn => {
-  btn.addEventListener('click', () => btn.closest('.media-url-item').remove());
-});
+function addMediaUrlField() {
+  document.getElementById('mediaUrlList').appendChild(createMediaItem());
+}
 
 function openAddCardModal() {
   // 폼 초기화
-  ['ac-title','ac-brand','ac-copytypes','ac-overview','ac-campaign','ac-idea','ac-insight','ac-url','ac-tags'].forEach(id => {
+  ['ac-title','ac-brand','ac-overview','ac-campaign','ac-idea','ac-insight','ac-url','ac-tags'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  document.getElementById('ac-copytypes').value = '';
+  renderCopyTypeButtons([]);
   document.getElementById('ac-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('mediaUrlList').innerHTML = '<div class="media-url-item"><input type="text" placeholder="이미지 URL 또는 유튜브 링크"><button class="media-url-remove">✕</button></div>';
-  document.querySelectorAll('.media-url-remove').forEach(btn => btn.addEventListener('click', () => btn.closest('.media-url-item').remove()));
+  const mlist = document.getElementById('mediaUrlList');
+  mlist.innerHTML = '';
+  mlist.appendChild(createMediaItem());
   document.getElementById('addCardOverlay').classList.add('show');
 }
 
@@ -1068,7 +1121,7 @@ document.getElementById('addSaveBtn').addEventListener('click', async () => {
       '콘텐츠': title,
       '브랜드명': document.getElementById('ac-brand').value.trim(),
       '날짜': document.getElementById('ac-date').value,
-      '카피 유형': document.getElementById('ac-copytypes').value.split(',').map(s=>s.trim()).filter(Boolean),
+      '카피 유형': [...selectedCopyTypes],
       '브랜드 개요': document.getElementById('ac-overview').value.trim(),
       '주목할 캠페인/콘텐츠': document.getElementById('ac-campaign').value.trim(),
       '적용해 볼 아이디어': document.getElementById('ac-idea').value.trim(),
