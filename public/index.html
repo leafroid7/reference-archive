@@ -149,8 +149,10 @@
     <button class="filter-month-btn" onclick="applyMonthFilter()">최근 1개월</button>
     <button class="filter-btn" onclick="applyFilters()">필터 적용</button>
     <button class="reset-btn" onclick="resetFilters()">초기화</button>
+    <button class="edit-mode-btn" id="editModeBtn">🔒 편집 모드</button>
   </div>
 </div>
+<div class="edit-mode-indicator" id="editIndicator">✏️ 편집 모드 활성화 — 카드 위에 마우스를 올리면 편집 버튼이 나타납니다</div>
 
 <div class="gallery" id="gallery">
   <div class="loading">로딩 중...</div>
@@ -174,6 +176,36 @@
       <div class="modal-right" id="modalRight" style="position:relative;">
         <button class="modal-close" id="modalCloseBtn">✕</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 잠금 해제 모달 -->
+<div class="unlock-overlay" id="unlockOverlay">
+  <div class="unlock-modal">
+    <h3>🔐 편집 모드</h3>
+    <p>편집 코드를 입력하세요</p>
+    <input class="unlock-input" id="unlockInput" type="password" placeholder="편집 코드">
+    <button class="unlock-btn" id="unlockSubmit">확인</button>
+    <div class="unlock-error" id="unlockError">코드가 올바르지 않습니다</div>
+  </div>
+</div>
+
+<!-- 카드 편집 모달 -->
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-modal">
+    <h3>✏️ 카드 편집</h3>
+    <div class="edit-field"><label>콘텐츠 (제목)</label><input id="ef-title" type="text"></div>
+    <div class="edit-field"><label>브랜드명</label><input id="ef-brand" type="text"></div>
+    <div class="edit-field"><label>날짜</label><input id="ef-date" type="date"></div>
+    <div class="edit-field"><label>브랜드 개요</label><textarea id="ef-overview"></textarea></div>
+    <div class="edit-field"><label>주목할 캠페인/콘텐츠</label><textarea id="ef-campaign"></textarea></div>
+    <div class="edit-field"><label>적용해 볼 아이디어</label><textarea id="ef-idea"></textarea></div>
+    <div class="edit-field"><label>인사이트 (내가 배운 것)</label><textarea id="ef-insight"></textarea></div>
+    <div class="edit-field"><label>출처 URL</label><input id="ef-url" type="text"></div>
+    <div class="edit-actions">
+      <button class="edit-cancel-btn" id="editCancelBtn">취소</button>
+      <button class="edit-save-btn" id="editSaveBtn">저장</button>
     </div>
   </div>
 </div>
@@ -435,6 +467,7 @@ function renderGallery(pages) {
         </div>
         ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
         <div class="card-reactions">${buildReactionHTML(page._id)}</div>
+        ${isEditMode ? `<button class="edit-card-btn" data-page-id="${page._id}">✏️ 편집</button>` : ''}
       </div>`;
   }).join('');
 }
@@ -539,6 +572,34 @@ document.getElementById('lbFit').addEventListener('click', (e) => { e.stopPropag
 document.getElementById('lbOriginal').addEventListener('click', (e) => { e.stopPropagation(); setLightboxZoom('original'); });
 document.getElementById('lbZoomIn').addEventListener('click', (e) => { e.stopPropagation(); setLightboxZoom('zoomin'); });
 
+// ── 본문 텍스트 블록 추출 ──────────────────────────────────────────
+function extractBodyText(blocks) {
+  const lines = [];
+  for (const block of blocks) {
+    const type = block.type;
+    const getText = (b, key) => b[key]?.rich_text?.map(t => t.plain_text).join('') || '';
+    if (type === 'paragraph') {
+      const t = getText(block, 'paragraph');
+      if (t) lines.push(`<div class="block-text">${t}</div>`);
+    } else if (type === 'heading_1') {
+      lines.push(`<div class="block-heading block-heading-1">${getText(block, 'heading_1')}</div>`);
+    } else if (type === 'heading_2') {
+      lines.push(`<div class="block-heading block-heading-2">${getText(block, 'heading_2')}</div>`);
+    } else if (type === 'heading_3') {
+      lines.push(`<div class="block-heading block-heading-3">${getText(block, 'heading_3')}</div>`);
+    } else if (type === 'bulleted_list_item') {
+      lines.push(`<div class="block-bulleted">${getText(block, 'bulleted_list_item')}</div>`);
+    } else if (type === 'numbered_list_item') {
+      lines.push(`<div class="block-numbered">${getText(block, 'numbered_list_item')}</div>`);
+    } else if (type === 'quote') {
+      lines.push(`<div class="block-quote">${getText(block, 'quote')}</div>`);
+    } else if (type === 'column_list' || type === 'column') {
+      if (block.children) lines.push(...extractBodyText(block.children).split('</div><div').map((s,i) => i===0?s+'</div>':'<div'+s));
+    }
+  }
+  return lines.join('');
+}
+
 // ── 토글 ──────────────────────────────────────────
 function buildToggle(label, content) {
   if (!content) return '';
@@ -588,17 +649,17 @@ function openModal(pageId) {
   const rightEl = document.getElementById('modalRight');
   rightEl.innerHTML = `<button class="modal-close" id="modalCloseBtn">✕</button>
     <div class="modal-badge-row">
-      ${brand ? `<span style="font-size:11px;color:#aaa;font-weight:600;">브랜드명</span><span class="card-brand">${brand}</span>` : ''}
-      ${divider}
-      ${copyTypes.length ? `<span style="font-size:11px;color:#aaa;font-weight:600;">카피 유형</span>${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}` : ''}
+      ${brand ? `<div class="modal-badge-brand-group"><span style="font-size:11px;color:#aaa;font-weight:600;margin-right:4px;">브랜드명</span><span class="card-brand">${brand}</span></div>` : ''}
+      ${copyTypes.length ? `<div class="modal-badge-type-group"><span style="font-size:11px;color:#aaa;font-weight:600;margin-right:4px;">카피 유형</span>${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}</div>` : ''}
     </div>
-    <div class="modal-title">${title}</div>
+        <div class="modal-title">${title}</div>
     <div class="modal-date">${date}</div>
     ${overview ? `<div class="modal-overview-label">브랜드 개요</div><div class="modal-overview">${overview}</div>` : ''}
     ${sourceUrl ? `<div class="modal-source"><a href="${sourceUrl}" target="_blank">🔗 출처 바로가기</a></div>` : ''}
     ${buildToggle('주목할 캠페인/콘텐츠', campaign)}
     ${buildToggle('적용해 볼 아이디어', idea)}
     ${buildToggle('인사이트 (내가 배운 것)', insight)}
+    ${buildToggle('📄 본문 내용', extractBodyText(page.blocks || []))}
     ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
   `;
 
@@ -638,8 +699,135 @@ function resetFilters() {
   loadPages();
 }
 
+
+// ── 편집 모드 ──────────────────────────────────────────
+const EDIT_CODE = 'underdogvibe2024';
+let isEditMode = false;
+let currentEditPageId = null;
+
+function checkEditModeFromURL() {
+  const param = new URLSearchParams(location.search).get('edit');
+  if (param === EDIT_CODE) activateEditMode();
+}
+
+function activateEditMode() {
+  isEditMode = true;
+  const btn = document.getElementById('editModeBtn');
+  btn.textContent = '🔓 편집 모드 ON';
+  btn.classList.add('active');
+  document.getElementById('editIndicator').classList.add('show');
+  renderGallery(allPages);
+  // URL에 파라미터 반영 (숨김)
+  const url = new URL(location.href);
+  url.searchParams.set('edit', EDIT_CODE);
+  history.replaceState(null, '', url);
+}
+
+function deactivateEditMode() {
+  isEditMode = false;
+  const btn = document.getElementById('editModeBtn');
+  btn.textContent = '🔒 편집 모드';
+  btn.classList.remove('active');
+  document.getElementById('editIndicator').classList.remove('show');
+  renderGallery(allPages);
+  const url = new URL(location.href);
+  url.searchParams.delete('edit');
+  history.replaceState(null, '', url);
+}
+
+document.getElementById('editModeBtn').addEventListener('click', () => {
+  if (isEditMode) { deactivateEditMode(); return; }
+  document.getElementById('unlockOverlay').classList.add('show');
+  document.getElementById('unlockInput').value = '';
+  document.getElementById('unlockError').style.display = 'none';
+  setTimeout(() => document.getElementById('unlockInput').focus(), 100);
+});
+
+document.getElementById('unlockOverlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('unlockOverlay')) document.getElementById('unlockOverlay').classList.remove('show');
+});
+
+document.getElementById('unlockSubmit').addEventListener('click', () => {
+  const val = document.getElementById('unlockInput').value.trim();
+  if (val === EDIT_CODE) {
+    document.getElementById('unlockOverlay').classList.remove('show');
+    activateEditMode();
+  } else {
+    document.getElementById('unlockError').style.display = 'block';
+  }
+});
+
+document.getElementById('unlockInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('unlockSubmit').click();
+});
+
+// 카드 편집 버튼 클릭
+document.getElementById('gallery').addEventListener('click', (e) => {
+  const editBtn = e.target.closest('.edit-card-btn');
+  if (editBtn) {
+    e.stopPropagation();
+    openEditModal(editBtn.dataset.pageId);
+  }
+}, true);
+
+function openEditModal(pageId) {
+  const page = allPages.find(p => p._id === pageId);
+  if (!page) return;
+  currentEditPageId = pageId;
+  const props = page.properties;
+  document.getElementById('ef-title').value = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
+  document.getElementById('ef-brand').value = props['브랜드명']?.select?.name || '';
+  document.getElementById('ef-date').value = props['날짜']?.date?.start || '';
+  document.getElementById('ef-overview').value = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
+  document.getElementById('ef-campaign').value = props['주목할 캠페인/콘텐츠']?.rich_text?.map(t => t.plain_text).join('') || '';
+  document.getElementById('ef-idea').value = props['적용해 볼 아이디어']?.rich_text?.map(t => t.plain_text).join('') || '';
+  document.getElementById('ef-insight').value = props['인사이트 (내가 배운 것)']?.rich_text?.map(t => t.plain_text).join('') || '';
+  document.getElementById('ef-url').value = props['출처 URL']?.url || '';
+  document.getElementById('editOverlay').classList.add('show');
+}
+
+document.getElementById('editCancelBtn').addEventListener('click', () => {
+  document.getElementById('editOverlay').classList.remove('show');
+});
+
+document.getElementById('editSaveBtn').addEventListener('click', async () => {
+  const saveBtn = document.getElementById('editSaveBtn');
+  saveBtn.textContent = '저장 중...';
+  saveBtn.classList.add('edit-saving');
+
+  const body = {
+    pageId: currentEditPageId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5'),
+    properties: {
+      '콘텐츠': document.getElementById('ef-title').value,
+      '브랜드명': document.getElementById('ef-brand').value,
+      '날짜': document.getElementById('ef-date').value,
+      '브랜드 개요': document.getElementById('ef-overview').value,
+      '주목할 캠페인/콘텐츠': document.getElementById('ef-campaign').value,
+      '적용해 볼 아이디어': document.getElementById('ef-idea').value,
+      '인사이트 (내가 배운 것)': document.getElementById('ef-insight').value,
+      '출처 URL': document.getElementById('ef-url').value,
+    }
+  };
+
+  try {
+    const res = await fetch('/api/notion?action=updatePage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('저장 실패');
+    document.getElementById('editOverlay').classList.remove('show');
+    await loadPages();
+  } catch(err) {
+    alert('저장 중 오류가 발생했습니다: ' + err.message);
+  } finally {
+    saveBtn.textContent = '저장';
+    saveBtn.classList.remove('edit-saving');
+  }
+});
+
 loadBrands();
-loadPages();
+loadPages().then(() => checkEditModeFromURL());
 </script>
 </body>
 </html>

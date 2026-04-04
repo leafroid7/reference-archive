@@ -61,6 +61,28 @@ module.exports = async (req, res) => {
 
       res.json({ pages });
 
+    } else if (action === 'updatePage') {
+      const body = await new Promise((resolve) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => resolve(JSON.parse(data)));
+      });
+
+      const { pageId, properties } = body;
+      const updateProps = {};
+
+      if (properties['콘텐츠']) updateProps['콘텐츠'] = { title: [{ text: { content: properties['콘텐츠'] } }] };
+      if (properties['브랜드명']) updateProps['브랜드명'] = { select: { name: properties['브랜드명'] } };
+      if (properties['날짜']) updateProps['날짜'] = { date: { start: properties['날짜'] } };
+      if (properties['브랜드 개요'] !== undefined) updateProps['브랜드 개요'] = { rich_text: [{ text: { content: properties['브랜드 개요'] } }] };
+      if (properties['주목할 캠페인/콘텐츠'] !== undefined) updateProps['주목할 캠페인/콘텐츠'] = { rich_text: [{ text: { content: properties['주목할 캠페인/콘텐츠'] } }] };
+      if (properties['적용해 볼 아이디어'] !== undefined) updateProps['적용해 볼 아이디어'] = { rich_text: [{ text: { content: properties['적용해 볼 아이디어'] } }] };
+      if (properties['인사이트 (내가 배운 것)'] !== undefined) updateProps['인사이트 (내가 배운 것)'] = { rich_text: [{ text: { content: properties['인사이트 (내가 배운 것)'] } }] };
+      if (properties['출처 URL'] !== undefined) updateProps['출처 URL'] = { url: properties['출처 URL'] || null };
+
+      await notion.pages.update({ page_id: pageId, properties: updateProps });
+      res.json({ success: true });
+
     } else if (action === 'getBrands') {
       const db = await notion.databases.retrieve({ database_id: DATABASE_ID });
       const brands = db.properties['브랜드명']?.select?.options || [];
