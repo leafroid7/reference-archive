@@ -627,7 +627,8 @@ async function fetchMorePages(isFirst = false) {
     allPages.forEach(p => (p.properties['카피 유형']?.multi_select || []).forEach(t => ctSet.add(t.name)));
     allCopyTypes = [...ctSet];
 
-    renderGallery(allPages, hasMore, newPages.length);
+    if (isFirst) renderGallery(allPages, false);
+    else renderGallery(newPages, true);
   } catch(e) {
     if (isFirst) document.getElementById('gallery').innerHTML = `<div class="error">데이터 로드 실패: ${e.message}</div>`;
   }
@@ -839,37 +840,66 @@ document.getElementById('emojiPicker').addEventListener('click', e => {
 });
 
 // ── 갤러리 렌더 ──────────────────────────────────────────
-function renderGallery(pages, hasMore = false, newCount = pages.length) {
+function buildCardHTML(page) {
+  const props = page.properties;
+  const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '(제목 없음)';
+  const brand = props['브랜드명']?.select?.name || '';
+  const date = props['날짜']?.date?.start || '';
+  const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
+  const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
+  const tags = props['태그']?.multi_select?.map(t => t.name) || [];
+  const media = extractFirstMedia(page.blocks || []);
+  const hasBrand = !!brand, hasTypes = copyTypes.length > 0;
+  const divider = hasBrand && hasTypes ? '<span class="badge-divider"></span>' : '';
+  return `<div class="card" data-page-id="${page._id}">
+    <div class="card-media">${buildCardMediaHTML(media)}</div>
+    <div class="card-body">
+      <div class="badge-row">
+        ${brand ? `<span class="card-brand">${brand}</span>` : ''}
+        ${divider}
+        ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
+      </div>
+      <div class="card-title">${title}</div>
+      <div class="card-date">${date}</div>
+      ${overview ? `<div class="card-overview-label">브랜드 개요</div><div class="card-overview">${overview}</div>` : ''}
+    </div>
+    ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
+    <div class="card-reactions">${buildReactionHTML(page._id)}</div>
+  </div>`;
+}
+
+function renderGallery(pages, isAppend = false) {
   const gallery = document.getElementById('gallery');
-  if (!pages.length) { gallery.innerHTML = '<div class="loading">등록된 레퍼런스가 없습니다</div>'; return; }
-  gallery.innerHTML = pages.map(page => {
-    const props = page.properties;
-    const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '(제목 없음)';
-    const brand = props['브랜드명']?.select?.name || '';
-    const date = props['날짜']?.date?.start || '';
-    const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
-    const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
-    const tags = props['태그']?.multi_select?.map(t => t.name) || [];
-    const media = extractFirstMedia(page.blocks || []);
-    const hasBrand = !!brand, hasTypes = copyTypes.length > 0;
-    const divider = hasBrand && hasTypes ? '<span class="badge-divider"></span>' : '';
-    return `
-      <div class="card" data-page-id="${page._id}">
-        <div class="card-media">${buildCardMediaHTML(media)}</div>
-        <div class="card-body">
-          <div class="badge-row">
-            ${brand ? `<span class="card-brand">${brand}</span>` : ''}
-            ${divider}
-            ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
-          </div>
-          <div class="card-title">${title}</div>
-          <div class="card-date">${date}</div>
-          ${overview ? `<div class="card-overview-label">브랜드 개요</div><div class="card-overview">${overview}</div>` : ''}
-        </div>
-        ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
-        <div class="card-reactions">${buildReactionHTML(page._id)}</div>
-      </div>`;
-  }).join('');
+  if (!pages.length && !isAppend) {
+    gallery.innerHTML = '<div class="loading">등록된 레퍼런스가 없습니다</div>';
+    return;
+  }
+  // 기존 더보기 버튼 제거
+  const existing = gallery.querySelector('.load-more-wrap');
+  if (existing) existing.remove();
+
+  if (isAppend) {
+    // 새 카드만 추가
+    const frag = document.createDocumentFragment();
+    pages.forEach(page => {
+      const div = document.createElement('div');
+      div.innerHTML = buildCardHTML(page);
+      frag.appendChild(div.firstElementChild);
+    });
+    gallery.appendChild(frag);
+  } else {
+    gallery.innerHTML = pages.map(buildCardHTML).join('');
+  }
+
+  // 더보기 버튼
+  if (hasMore) {
+    const wrap = document.createElement('div');
+    wrap.className = 'load-more-wrap';
+    wrap.innerHTML = `<button class="load-more-btn" id="loadMoreBtn">↓ 20개 더 불러오기</button>
+      <span class="load-more-count">현재 ${allPages.length}개 표시 중</span>`;
+    wrap.querySelector('#loadMoreBtn').addEventListener('click', fetchMorePages);
+    gallery.appendChild(wrap);
+  }
 }
 
 // ── 캐러셀 ──────────────────────────────────────────
