@@ -120,7 +120,7 @@ module.exports = async (req, res) => {
         .map(b => b.id);
 
       // 기존 미디어 블록 삭제
-      await Promise.all(mediaBlockIds.map(id => notion.blocks.update({ block_id: id, archived: true })));
+      await Promise.all(mediaBlockIds.map(id => notion.blocks.delete({ block_id: id })));
 
       // 새 순서로 블록 추가
       if (mediaUrls.length > 0) {

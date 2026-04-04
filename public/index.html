@@ -952,7 +952,10 @@ function buildEditMediaSection(mediaItems, pageId) {
       thumb = `<div class="edit-media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:16px;">▶</div>`;
       label = m.url ? (m.url.length > 40 ? m.url.slice(0,40)+'...' : m.url) : 'media';
     }
-    return `<div class="edit-media-item" draggable="true" data-index="${i}" data-page="${pageId}">
+    const dataUrl = m.type === 'youtube'
+      ? `https://www.youtube.com/watch?v=${m.id}`
+      : (m.url || '');
+    return `<div class="edit-media-item" draggable="true" data-index="${i}" data-page="${pageId}" data-original-url="${dataUrl}">
       <span style="color:#ccc;cursor:grab;font-size:14px;user-select:none;">⠿</span>
       ${thumb}
       <span class="edit-media-url">${label}</span>
@@ -1028,14 +1031,10 @@ async function saveMediaOrder(pageId) {
   if (!list) return;
   const items = [...list.querySelectorAll('.edit-media-item')];
   const mediaUrls = items.map(item => {
+    // 새로 추가된 항목
     if (item.dataset.newUrl) return item.dataset.newUrl;
-    const img = item.querySelector('img.edit-media-thumb');
-    if (!img) return null;
-    const src = img.src;
-    // youtube 썸네일에서 id 추출
-    const ytMatch = src.match(/img\.youtube\.com\/vi\/([a-zA-Z0-9_-]{11})/);
-    if (ytMatch) return `https://www.youtube.com/watch?v=${ytMatch[1]}`;
-    return src;
+    // 기존 항목은 data-original-url에 원본 URL 저장됨
+    return item.dataset.originalUrl || null;
   }).filter(Boolean);
 
   const rawId = pageId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
