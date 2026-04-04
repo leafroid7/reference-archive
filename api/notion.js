@@ -39,10 +39,23 @@ module.exports = async (req, res) => {
         sorts: [{ property: '날짜', direction: 'descending' }]
       });
 
+      async function fetchBlocksRecursive(blockId) {
+        const r = await notion.blocks.children.list({ block_id: blockId });
+        const results = await Promise.all(
+          r.results.map(async (block) => {
+            if (block.has_children && (block.type === 'column_list' || block.type === 'column')) {
+              block.children = await fetchBlocksRecursive(block.id);
+            }
+            return block;
+          })
+        );
+        return results;
+      }
+
       const pages = await Promise.all(
         response.results.map(async (page) => {
-          const blocks = await notion.blocks.children.list({ block_id: page.id });
-          return { ...page, _id: page.id.replace(/-/g, ''), blocks: blocks.results };
+          const blocks = await fetchBlocksRecursive(page.id);
+          return { ...page, _id: page.id.replace(/-/g, ''), blocks };
         })
       );
 
