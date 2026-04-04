@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>H&B 케이스 스터디</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗃️</text></svg>">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, 'Apple SD Gothic Neo', 'Pretendard', sans-serif; background: #f5f5f5; color: #333; }
@@ -37,6 +38,18 @@
     .filter-month-btn { padding: 7px 14px; background: #f0f0f0; color: #555; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
     .filter-month-btn:hover { background: #e0e0e0; }
     .reset-btn { padding: 7px 14px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 13px; }
+
+    /* 정렬 드롭다운 */
+    .sort-wrap { position: relative; }
+    .sort-btn { padding: 7px 14px; background: transparent; color: #555; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .sort-btn.active { border-color: #888; color: #333; background: #f5f5f5; }
+    .sort-dropdown { position: absolute; top: calc(100% + 4px); left: 0; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 200; min-width: 180px; padding: 4px; display: none; }
+    .sort-dropdown.show { display: block; }
+    .sort-option { padding: 9px 14px; font-size: 13px; cursor: pointer; border-radius: 7px; display: flex; justify-content: space-between; align-items: center; }
+    .sort-option:hover { background: rgba(254,240,138,0.35); }
+    .sort-option.selected { color: #3b82f6; font-weight: 600; }
+    .sort-option .sort-check { display: none; }
+    .sort-option.selected .sort-check { display: inline; }
 
     /* 갤러리 */
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 24px 32px; align-items: start; }
@@ -275,6 +288,14 @@
     <button class="filter-month-btn" onclick="applyMonthFilter()">최근 1개월</button>
     <button class="filter-btn" onclick="applyFilters()">필터 적용</button>
     <button class="reset-btn" onclick="resetFilters()">초기화</button>
+    <div class="sort-wrap">
+      <button class="sort-btn" id="sortBtn" onclick="toggleSortDropdown()">↕ 정렬 <span id="sortLabel">날짜 최신순</span></button>
+      <div class="sort-dropdown" id="sortDropdown">
+        <div class="sort-option selected" data-sort="date_desc" onclick="applySort('date_desc')">날짜 최신순 <span class="sort-check">✓</span></div>
+        <div class="sort-option" data-sort="date_asc" onclick="applySort('date_asc')">날짜 오래된순 <span class="sort-check">✓</span></div>
+        <div class="sort-option" data-sort="reaction_desc" onclick="applySort('reaction_desc')">공감 많은순 <span class="sort-check">✓</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -500,6 +521,51 @@ document.addEventListener('click', e => {
 });
 
 // ── 데이터 로드 ──────────────────────────────────────────
+
+// ── 정렬 ──────────────────────────────────────────
+let currentSort = 'date_desc';
+
+function toggleSortDropdown() {
+  document.getElementById('sortDropdown').classList.toggle('show');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.sort-wrap'))
+    document.getElementById('sortDropdown').classList.remove('show');
+});
+
+function applySort(sort) {
+  currentSort = sort;
+  const labels = { date_desc: '날짜 최신순', date_asc: '날짜 오래된순', reaction_desc: '공감 많은순' };
+  document.getElementById('sortLabel').textContent = labels[sort];
+  document.querySelectorAll('.sort-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.sort === sort);
+  });
+  document.getElementById('sortBtn').classList.add('active');
+  document.getElementById('sortDropdown').classList.remove('show');
+
+  // 공감 많은 순은 클라이언트 정렬, 날짜는 서버 정렬
+  if (sort === 'reaction_desc') {
+    const sorted = [...allPages].sort((a, b) => {
+      const ra = Object.values(reactionData[a._id] || {}).filter(v => typeof v === 'number').reduce((s,v)=>s+v,0);
+      const rb = Object.values(reactionData[b._id] || {}).filter(v => typeof v === 'number').reduce((s,v)=>s+v,0);
+      return rb - ra;
+    });
+    renderGallery(sorted, false);
+  } else {
+    // 날짜 정렬은 서버에서 다시 로드
+    loadPagesWithSort();
+  }
+}
+
+async function loadPagesWithSort() {
+  currentFilters = currentFilters || { brand: '', dateStart: '', dateEnd: '' };
+  nextCursor = null;
+  allPages = [];
+  document.getElementById('gallery').innerHTML = '<div class="loading">로딩 중...</div>';
+  await fetchMorePages(true);
+}
+
 async function loadBrands() {
   try {
     const res = await fetch(`${API_BASE}?action=getBrands`);
@@ -606,7 +672,8 @@ async function loadPages(brandFilter='', dateStart='', dateEnd='') {
 
 async function fetchMorePages(isFirst = false) {
   try {
-    let url = `${API_BASE}?action=getPages&page_size=${PAGE_SIZE}`;
+    const sortDir = currentSort === 'date_asc' ? 'ascending' : 'descending';
+    let url = `${API_BASE}?action=getPages&page_size=${PAGE_SIZE}&sort_dir=${sortDir}`;
     if (currentFilters.brand) url += `&filter_brand=${encodeURIComponent(currentFilters.brand)}`;
     if (currentFilters.dateStart) url += `&filter_date_start=${currentFilters.dateStart}`;
     if (currentFilters.dateEnd) url += `&filter_date_end=${currentFilters.dateEnd}`;

@@ -6,7 +6,7 @@ const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const { action, filter_brand, filter_date_start, filter_date_end, page_size, start_cursor } = req.query;
+  const { action, filter_brand, filter_date_start, filter_date_end, page_size, start_cursor, sort_dir } = req.query;
 
   try {
     if (action === 'getPages') {
@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
       const response = await notion.databases.query({
         database_id: DATABASE_ID,
         filter: filters.length > 0 ? { and: filters } : undefined,
-        sorts: [{ property: '날짜', direction: 'descending' }],
+        sorts: [{ property: '날짜', direction: sort_dir === 'ascending' ? 'ascending' : 'descending' }],
         page_size: page_size ? parseInt(page_size) : 20,
         ...(start_cursor ? { start_cursor } : {})
       });
