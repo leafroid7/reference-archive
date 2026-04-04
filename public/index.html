@@ -41,7 +41,7 @@
     .card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
     .card-date { font-size: 11px; color: #bbb; margin-bottom: 8px; }
     .card-overview-label { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 3px; }
-    .card-overview { font-size: 13px; color: #555; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-overview { font-size: 13px; color: #555; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .card-tags { padding: 6px 16px 10px; display: flex; flex-wrap: wrap; gap: 4px; }
     .tag { font-size: 11px; color: #888; background: #f5f5f5; padding: 2px 8px; border-radius: 20px; }
     .card-reactions { padding: 10px 16px; border-top: 1px solid #f5f5f5; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
@@ -165,6 +165,44 @@
       .header { padding: 12px 16px; }
     }
 
+
+    /* 카드 추가 모달 */
+    .add-card-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9000; align-items: center; justify-content: center; padding: 20px; }
+    .add-card-overlay.show { display: flex !important; }
+    .add-card-modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 540px; max-height: 88vh; overflow-y: auto; }
+    .add-card-modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+    .add-field { margin-bottom: 14px; }
+    .add-field label { display: block; font-size: 12px; color: #888; font-weight: 600; margin-bottom: 5px; }
+    .add-field input, .add-field textarea, .add-field select {
+      width: 100%; border: 1px solid #eee; border-radius: 8px; padding: 9px 12px;
+      font-size: 14px; font-family: inherit; box-sizing: border-box; background: white;
+    }
+    .add-field textarea { min-height: 70px; resize: vertical; }
+    .add-field input:focus, .add-field textarea:focus { outline: none; border-color: #bbb; }
+    .add-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+    .add-save-btn { padding: 9px 20px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .add-cancel-btn { padding: 9px 16px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .add-floating-btn { position: fixed; bottom: 28px; right: 28px; background: #333; color: white; border: none; border-radius: 50%; width: 52px; height: 52px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.2); display: none; z-index: 200; transition: background 0.2s; align-items: center; justify-content: center; }
+    .add-floating-btn.show { display: flex; }
+    .add-floating-btn:hover { background: #555; }
+
+    /* 브랜드명 자동완성 */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; max-height: 180px; overflow-y: auto; display: none; }
+    .autocomplete-list.show { display: block; }
+    .autocomplete-item { padding: 9px 12px; cursor: pointer; font-size: 14px; }
+    .autocomplete-item:hover, .autocomplete-item.selected { background: #f5f5f5; }
+    .autocomplete-new { color: #3b82f6; font-style: italic; }
+
+    /* 이미지 URL 입력 */
+    .media-url-list { margin-top: 6px; }
+    .media-url-item { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+    .media-url-item input { flex: 1; }
+    .media-url-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 16px; padding: 0 4px; }
+    .media-url-remove:hover { color: #e55; }
+    .media-url-add { background: none; border: 1px dashed #ddd; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 12px; padding: 6px 12px; width: 100%; margin-top: 4px; }
+    .media-url-add:hover { border-color: #bbb; color: #777; }
+
     .loading { text-align: center; padding: 60px; color: #aaa; grid-column: 1/-1; }
     .error { text-align: center; padding: 40px; color: #e55; grid-column: 1/-1; }
   </style>
@@ -237,6 +275,73 @@
   </div>
 </div>
 
+<!-- 카드 추가 모달 -->
+<div class="add-card-overlay" id="addCardOverlay">
+  <div class="add-card-modal">
+    <h3>➕ 새 카드 추가</h3>
+    <div class="add-field">
+      <label>콘텐츠 제목 *</label>
+      <input id="ac-title" type="text" placeholder="제목을 입력하세요">
+    </div>
+    <div class="add-field">
+      <label>브랜드명</label>
+      <div class="autocomplete-wrap">
+        <input id="ac-brand" type="text" placeholder="브랜드명 입력 또는 선택" autocomplete="off">
+        <div class="autocomplete-list" id="brandAutocomplete"></div>
+      </div>
+    </div>
+    <div class="add-field">
+      <label>날짜</label>
+      <input id="ac-date" type="date">
+    </div>
+    <div class="add-field">
+      <label>카피 유형 (쉼표로 구분)</label>
+      <input id="ac-copytypes" type="text" placeholder="예: 제품 강조형, 신규 런칭형">
+    </div>
+    <div class="add-field">
+      <label>브랜드 개요</label>
+      <textarea id="ac-overview" placeholder="브랜드에 대한 간략한 설명"></textarea>
+    </div>
+    <div class="add-field">
+      <label>주목할 캠페인/콘텐츠</label>
+      <textarea id="ac-campaign"></textarea>
+    </div>
+    <div class="add-field">
+      <label>적용해 볼 아이디어</label>
+      <textarea id="ac-idea"></textarea>
+    </div>
+    <div class="add-field">
+      <label>인사이트 (내가 배운 것)</label>
+      <textarea id="ac-insight"></textarea>
+    </div>
+    <div class="add-field">
+      <label>출처 URL</label>
+      <input id="ac-url" type="text" placeholder="https://...">
+    </div>
+    <div class="add-field">
+      <label>태그 (쉼표로 구분)</label>
+      <input id="ac-tags" type="text" placeholder="예: SNS, 인스타그램, 뷰티">
+    </div>
+    <div class="add-field">
+      <label>이미지/영상 URL</label>
+      <div class="media-url-list" id="mediaUrlList">
+        <div class="media-url-item">
+          <input type="text" placeholder="이미지 URL 또는 유튜브 링크">
+          <button class="media-url-remove">✕</button>
+        </div>
+      </div>
+      <button class="media-url-add" onclick="addMediaUrlField()">+ URL 추가</button>
+    </div>
+    <div class="add-actions">
+      <button class="add-cancel-btn" id="addCancelBtn">취소</button>
+      <button class="add-save-btn" id="addSaveBtn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 카드 추가 플로팅 버튼 -->
+<button class="add-floating-btn" id="addFloatingBtn" title="새 카드 추가">＋</button>
+
 <!-- 이모지 피커 -->
 <div class="emoji-picker" id="emojiPicker"></div>
 
@@ -262,6 +367,7 @@ function activateEditMode() {
   const btn = document.getElementById('editModeBtn');
   btn.textContent = '📖 읽기 모드';
   btn.classList.add('active');
+  document.getElementById('addFloatingBtn').classList.add('show');
   renderGallery(allPages);
   if (currentModalPageId) openModal(currentModalPageId);
 }
@@ -271,6 +377,7 @@ function deactivateEditMode() {
   const btn = document.getElementById('editModeBtn');
   btn.textContent = '✏️ 편집 모드';
   btn.classList.remove('active');
+  document.getElementById('addFloatingBtn').classList.remove('show');
   renderGallery(allPages);
   if (currentModalPageId) openModal(currentModalPageId);
 }
@@ -351,9 +458,10 @@ async function loadBrands() {
     const res = await fetch(`${API_BASE}?action=getBrands`);
     const data = await res.json();
     const sel = document.getElementById('brandFilter');
-    (data.brands || []).forEach(b => {
+    allBrandNames = (data.brands || []).map(b => b.name);
+    allBrandNames.forEach(name => {
       const opt = document.createElement('option');
-      opt.value = b.name; opt.textContent = b.name;
+      opt.value = name; opt.textContent = name;
       sel.appendChild(opt);
     });
   } catch(e) { console.error(e); }
@@ -388,15 +496,22 @@ function extractAllMedia(blocks) {
       const url = block.image?.file?.url || block.image?.external?.url;
       if (url) items.push({ type: 'image', url });
     } else if (block.type === 'video') {
-      const url = block.video?.file?.url || block.video?.external?.url;
-      if (url) items.push({ type: 'video', url });
+      const url = block.video?.file?.url || block.video?.external?.url || '';
+      const ytId = getYouTubeId(url);
+      if (ytId) items.push({ type: 'youtube', id: ytId });
+      else if (url) items.push({ type: 'video', url });
     } else if (block.type === 'embed') {
       const url = block.embed?.url || '';
       const ytId = getYouTubeId(url);
       if (ytId) items.push({ type: 'youtube', id: ytId });
       else if (url) items.push({ type: 'embed', url });
-    } else if (block.type === 'video') {
-      const url = block.video?.external?.url || '';
+    } else if (block.type === 'bookmark') {
+      // 노션에서 링크 붙여넣기 → 임베드 전환 시 bookmark 타입으로 올 수 있음
+      const url = block.bookmark?.url || '';
+      const ytId = getYouTubeId(url);
+      if (ytId) items.push({ type: 'youtube', id: ytId });
+    } else if (block.type === 'link_preview') {
+      const url = block.link_preview?.url || '';
       const ytId = getYouTubeId(url);
       if (ytId) items.push({ type: 'youtube', id: ytId });
     } else if (block.type === 'paragraph') {
@@ -425,11 +540,42 @@ function buildCardMediaHTML(media) {
 }
 
 // ── 본문 텍스트 추출 ──────────────────────────────────────────
+function renderRichText(richTextArr) {
+  if (!richTextArr || !richTextArr.length) return '';
+  return richTextArr.map(t => {
+    let text = t.plain_text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const a = t.annotations || {};
+    if (a.bold) text = `<strong>${text}</strong>`;
+    if (a.italic) text = `<em>${text}</em>`;
+    if (a.strikethrough) text = `<s>${text}</s>`;
+    if (a.underline) text = `<u>${text}</u>`;
+    if (a.code) text = `<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-size:12px;">${text}</code>`;
+    if (a.color && a.color !== 'default') {
+      const colorMap = {
+        gray:'#888', brown:'#9b6b4b', orange:'#d97706', yellow:'#b8860b',
+        green:'#16a34a', blue:'#2563eb', purple:'#7c3aed', pink:'#db2777', red:'#dc2626',
+        gray_background:'#f0f0f0', brown_background:'#fdf0e8', orange_background:'#fff7ed',
+        yellow_background:'#fefce8', green_background:'#f0fdf4', blue_background:'#eff6ff',
+        purple_background:'#faf5ff', pink_background:'#fdf2f8', red_background:'#fef2f2'
+      };
+      const c = colorMap[a.color];
+      if (c) {
+        const isBackground = a.color.includes('background');
+        text = isBackground
+          ? `<span style="background:${c};padding:1px 3px;border-radius:3px;">${text}</span>`
+          : `<span style="color:${c};">${text}</span>`;
+      }
+    }
+    if (t.href) text = `<a href="${t.href}" target="_blank" style="color:#3b82f6;text-decoration:underline;">${text}</a>`;
+    return text;
+  }).join('');
+}
+
 function extractBodyText(blocks) {
   const lines = [];
   for (const block of blocks) {
     const type = block.type;
-    const getText = (b, key) => b[key]?.rich_text?.map(t => t.plain_text).join('') || '';
+    const getText = (b, key) => renderRichText(b[key]?.rich_text) || '';
     if (type === 'paragraph') {
       const t = getText(block, 'paragraph');
       if (t) lines.push(`<div class="block-text">${t}</div>`);
@@ -849,6 +995,106 @@ function resetFilters() {
   document.getElementById('dateEnd').value = '';
   loadPages();
 }
+
+
+// ── 카드 추가 ──────────────────────────────────────────
+let allBrandNames = [];
+
+// 브랜드 자동완성
+document.getElementById('ac-brand').addEventListener('input', function() {
+  const val = this.value.trim().toLowerCase();
+  const list = document.getElementById('brandAutocomplete');
+  if (!val) { list.classList.remove('show'); return; }
+  const matches = allBrandNames.filter(b => b.toLowerCase().includes(val));
+  const isExact = allBrandNames.some(b => b.toLowerCase() === val);
+  let html = matches.map(b => `<div class="autocomplete-item" onclick="selectBrand('${b}')">${b}</div>`).join('');
+  if (!isExact) html += `<div class="autocomplete-item autocomplete-new" onclick="selectBrand('${document.getElementById('ac-brand').value.trim()}')">+ "${document.getElementById('ac-brand').value.trim()}" 새로 추가</div>`;
+  list.innerHTML = html;
+  list.classList.toggle('show', html.length > 0);
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) document.getElementById('brandAutocomplete').classList.remove('show');
+});
+
+function selectBrand(name) {
+  document.getElementById('ac-brand').value = name;
+  document.getElementById('brandAutocomplete').classList.remove('show');
+}
+
+function addMediaUrlField() {
+  const list = document.getElementById('mediaUrlList');
+  const item = document.createElement('div');
+  item.className = 'media-url-item';
+  item.innerHTML = '<input type="text" placeholder="이미지 URL 또는 유튜브 링크"><button class="media-url-remove">✕</button>';
+  item.querySelector('.media-url-remove').addEventListener('click', () => item.remove());
+  list.appendChild(item);
+}
+
+// 기존 remove 버튼 바인딩
+document.querySelectorAll('.media-url-remove').forEach(btn => {
+  btn.addEventListener('click', () => btn.closest('.media-url-item').remove());
+});
+
+function openAddCardModal() {
+  // 폼 초기화
+  ['ac-title','ac-brand','ac-copytypes','ac-overview','ac-campaign','ac-idea','ac-insight','ac-url','ac-tags'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('ac-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('mediaUrlList').innerHTML = '<div class="media-url-item"><input type="text" placeholder="이미지 URL 또는 유튜브 링크"><button class="media-url-remove">✕</button></div>';
+  document.querySelectorAll('.media-url-remove').forEach(btn => btn.addEventListener('click', () => btn.closest('.media-url-item').remove()));
+  document.getElementById('addCardOverlay').classList.add('show');
+}
+
+document.getElementById('addFloatingBtn').addEventListener('click', openAddCardModal);
+document.getElementById('addCancelBtn').addEventListener('click', () => document.getElementById('addCardOverlay').classList.remove('show'));
+document.getElementById('addCardOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('addCardOverlay')) document.getElementById('addCardOverlay').classList.remove('show');
+});
+
+document.getElementById('addSaveBtn').addEventListener('click', async () => {
+  const title = document.getElementById('ac-title').value.trim();
+  if (!title) { alert('제목을 입력해주세요'); return; }
+
+  const saveBtn = document.getElementById('addSaveBtn');
+  saveBtn.textContent = '저장 중...'; saveBtn.disabled = true;
+
+  const mediaUrls = Array.from(document.querySelectorAll('#mediaUrlList .media-url-item input'))
+    .map(i => i.value.trim()).filter(Boolean);
+
+  const body = {
+    properties: {
+      '콘텐츠': title,
+      '브랜드명': document.getElementById('ac-brand').value.trim(),
+      '날짜': document.getElementById('ac-date').value,
+      '카피 유형': document.getElementById('ac-copytypes').value.split(',').map(s=>s.trim()).filter(Boolean),
+      '브랜드 개요': document.getElementById('ac-overview').value.trim(),
+      '주목할 캠페인/콘텐츠': document.getElementById('ac-campaign').value.trim(),
+      '적용해 볼 아이디어': document.getElementById('ac-idea').value.trim(),
+      '인사이트 (내가 배운 것)': document.getElementById('ac-insight').value.trim(),
+      '출처 URL': document.getElementById('ac-url').value.trim(),
+      '태그': document.getElementById('ac-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    },
+    mediaUrls
+  };
+
+  try {
+    const res = await fetch('/api/notion?action=createPage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    document.getElementById('addCardOverlay').classList.remove('show');
+    await loadPages();
+  } catch(err) {
+    alert('저장 오류: ' + err.message);
+  } finally {
+    saveBtn.textContent = '저장'; saveBtn.disabled = false;
+  }
+});
+
 
 loadBrands();
 loadPages();

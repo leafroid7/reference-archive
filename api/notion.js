@@ -61,6 +61,50 @@ module.exports = async (req, res) => {
 
       res.json({ pages });
 
+    } else if (action === 'createPage') {
+      const body = await new Promise((resolve) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => resolve(JSON.parse(data)));
+      });
+
+      const { properties: p, mediaUrls = [] } = body;
+
+      const newPage = await notion.pages.create({
+        parent: { database_id: DATABASE_ID },
+        properties: {
+          '콘텐츠': { title: [{ text: { content: p['콘텐츠'] || '' } }] },
+          ...(p['브랜드명'] ? { '브랜드명': { select: { name: p['브랜드명'] } } } : {}),
+          ...(p['날짜'] ? { '날짜': { date: { start: p['날짜'] } } } : {}),
+          ...(p['카피 유형']?.length ? { '카피 유형': { multi_select: p['카피 유형'].map(n => ({ name: n })) } } : {}),
+          ...(p['브랜드 개요'] ? { '브랜드 개요': { rich_text: [{ text: { content: p['브랜드 개요'] } }] } } : {}),
+          ...(p['주목할 캠페인/콘텐츠'] ? { '주목할 캠페인/콘텐츠': { rich_text: [{ text: { content: p['주목할 캠페인/콘텐츠'] } }] } } : {}),
+          ...(p['적용해 볼 아이디어'] ? { '적용해 볼 아이디어': { rich_text: [{ text: { content: p['적용해 볼 아이디어'] } }] } } : {}),
+          ...(p['인사이트 (내가 배운 것)'] ? { '인사이트 (내가 배운 것)': { rich_text: [{ text: { content: p['인사이트 (내가 배운 것)'] } }] } } : {}),
+          ...(p['출처 URL'] ? { '출처 URL': { url: p['출처 URL'] } } : {}),
+          ...(p['태그']?.length ? { '태그': { multi_select: p['태그'].map(n => ({ name: n })) } } : {}),
+        }
+      });
+
+      // 미디어 URL을 페이지 본문 블록으로 추가
+      if (mediaUrls.length > 0) {
+        const getYouTubeId = (url) => {
+          const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          return m ? m[1] : null;
+        };
+        const children = mediaUrls.map(url => {
+          const ytId = getYouTubeId(url);
+          if (ytId) return { object: 'block', type: 'embed', embed: { url: `https://www.youtube.com/watch?v=${ytId}` } };
+          if (url.match(/\.(jpg|jpeg|png|gif|webp)$/i) || url.includes('images') || !url.includes('.com/watch')) {
+            return { object: 'block', type: 'image', image: { type: 'external', external: { url } } };
+          }
+          return { object: 'block', type: 'embed', embed: { url } };
+        });
+        await notion.blocks.children.append({ block_id: newPage.id, children });
+      }
+
+      res.json({ success: true, pageId: newPage.id });
+
     } else if (action === 'updatePage') {
       const body = await new Promise((resolve) => {
         let data = '';
