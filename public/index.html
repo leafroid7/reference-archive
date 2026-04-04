@@ -72,8 +72,8 @@
     .carousel-slide .no-media { color: #555; font-size: 14px; }
 
     /* 캐러셀 버튼 — 항상 DOM에 존재, show/hide로 제어 */
-    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; user-select: none; }
-    .carousel-btn:hover { background: rgba(255,255,255,0.35); }
+    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s, transform 0.2s; user-select: none; }
+    .carousel-btn:hover { background: rgba(255,255,255,0.85); color: #111; transform: translateY(-50%) scale(1.12); }
     .carousel-btn.prev { left: 10px; }
     .carousel-btn.next { right: 10px; }
     .carousel-btn.hidden { display: none; }
@@ -85,8 +85,8 @@
     .carousel-dot.active { background: white; }
 
     /* 이미지 확대 */
-    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 600; align-items: center; justify-content: center; cursor: zoom-out; }
-    .lightbox.show { display: flex; }
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; align-items: center; justify-content: center; cursor: zoom-out; }
+    .lightbox.show { display: flex !important; }
     .lightbox img { max-width: 92vw; max-height: 92vh; object-fit: contain; border-radius: 4px; }
     .lightbox-close { position: absolute; top: 16px; right: 20px; color: white; font-size: 28px; cursor: pointer; background: none; border: none; }
 
@@ -211,6 +211,18 @@ carousel.addEventListener('touchend', (e) => {
   if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
 });
 
+// 캐러셀 마우스 드래그 스와이프 (PC)
+let mouseStartX = 0;
+let isDragging = false;
+carousel.addEventListener('mousedown', (e) => { mouseStartX = e.clientX; isDragging = true; });
+carousel.addEventListener('mouseup', (e) => {
+  if (!isDragging) return;
+  isDragging = false;
+  const diff = mouseStartX - e.clientX;
+  if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
+});
+carousel.addEventListener('mouseleave', () => { isDragging = false; });
+
 // 라이트박스
 document.getElementById('lightbox').addEventListener('click', closeLightbox);
 document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
@@ -276,6 +288,9 @@ function extractAllMedia(blocks) {
       const text = block.paragraph?.rich_text?.map(t => t.plain_text).join('') || '';
       const ytId = getYouTubeId(text);
       if (ytId) items.push({ type: 'youtube', id: ytId });
+    } else if (block.type === 'column_list' || block.type === 'column') {
+      // 2열 배치 블록 안의 미디어도 재귀 추출
+      if (block.children?.length) items.push(...extractAllMedia(block.children));
     }
   }
   return items;
@@ -529,9 +544,9 @@ function openModal(pageId) {
 
   document.getElementById('modalRight').innerHTML = `
     <div class="modal-badge-row">
-      ${brand ? `<span class="card-brand">${brand}</span>` : ''}
+      ${brand ? `<span style="font-size:11px;color:#aaa;font-weight:600;">브랜드명</span><span class="card-brand">${brand}</span>` : ''}
       ${divider}
-      ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
+      ${copyTypes.length ? `<span style="font-size:11px;color:#aaa;font-weight:600;">카피 유형</span>${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}` : ''}
     </div>
     <div class="modal-title">${title}</div>
     <div class="modal-date">${date}</div>
