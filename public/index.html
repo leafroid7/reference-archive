@@ -53,8 +53,8 @@
     .emoji-option:hover { background: #f5f5f5; }
 
     /* 모달 오버레이 */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
-    .modal-overlay.show { display: flex; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.show { display: flex !important; }
 
     /* 모달 본체 */
     .modal-wrap { position: relative; width: 100%; max-width: 960px; }
@@ -196,6 +196,7 @@ document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', (e) => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
+document.getElementById('modalOverlay').style.display = 'none';
 
 // 캐러셀 버튼
 document.getElementById('prevBtn').addEventListener('click', () => moveCarousel(-1));
@@ -542,11 +543,13 @@ function openModal(pageId) {
     ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
   `;
 
-  document.getElementById('modalOverlay').classList.add('show');
+  const overlay = document.getElementById('modalOverlay');
+  overlay.style.display = 'flex';
 }
 
 function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('show');
+  const overlay = document.getElementById('modalOverlay');
+  overlay.style.display = 'none';
 }
 
 // ── 필터 ──────────────────────────────────────────
