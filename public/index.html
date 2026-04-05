@@ -983,8 +983,7 @@ function extractBodyText(blocks) {
 // ── 반응 이모지 ──────────────────────────────────────────
 function nl2br(text) {
   if (!text) return '';
-  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/
-/g,'<br>');
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
 
 function getTotalReactions(pageId) {
