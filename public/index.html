@@ -1232,7 +1232,7 @@ function openLightbox(url) {
 function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
 
 // ── 토글 ──────────────────────────────────────────
-function buildToggle(label, content) {
+function buildToggle(label, content, isHtml = false) {
   if (!content) return '';
   const id = 'tg_' + Math.random().toString(36).slice(2);
   return `
@@ -1241,7 +1241,7 @@ function buildToggle(label, content) {
         <span>${label}</span>
         <span class="toggle-arrow" id="arr_${id}">▼</span>
       </button>
-      <div class="toggle-body" id="${id}">${nl2br(content)}</div>
+      <div class="toggle-body" id="${id}">${isHtml ? content : nl2br(content)}</div>
     </div>`;
 }
 
@@ -1504,7 +1504,7 @@ function openModal(pageId) {
                                 : buildToggle('적용해 볼 아이디어', idea)}
     ${eb && insight !== undefined ? buildEditableToggle('인사이트 (내가 배운 것)', insight, '인사이트 (내가 배운 것)', pageId)
                                   : buildToggle('인사이트 (내가 배운 것)', insight)}
-    ${buildToggle('📄 본문 내용', bodyText)}
+    ${buildToggle('📄 본문 내용', bodyText, true)}
     ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
     ${eb ? buildEditMediaSection(mediaItems, pageId) : ''}
   `;
