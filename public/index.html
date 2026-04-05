@@ -15,7 +15,9 @@
     .header h1 { font-size: 20px; font-weight: 700; }
     .edit-mode-btn { padding: 6px 14px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
     .edit-mode-btn.active { background: #fff8ec; color: #d97706; border-color: #f5c06a; font-weight: 600; }
-    .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filters { display: flex; flex-direction: column; gap: 8px; }
+    .filters-row1 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filters-row2 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .filter-select, .filter-date { padding: 7px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; }
 
     /* 브랜드 검색 필터 */
@@ -257,7 +259,7 @@
     .media-url-add:hover { border-color: #bbb; color: #777; }
 
     .text-search-wrap { position: relative; }
-    .text-search-input { padding: 8px 30px 8px 12px; border: 1px solid #e5e5e5; border-radius: 20px; font-size: 13px; width: 200px; outline: none; transition: border-color 0.15s; }
+    .text-search-input { padding: 7px 30px 7px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; width: 240px; outline: none; transition: border-color 0.15s; background: white; }
     .text-search-input:focus { border-color: #aaa; }
     .text-search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #bbb; cursor: pointer; font-size: 13px; display: none; }
     .text-search-clear.show { display: block; }
@@ -283,34 +285,38 @@
     <button class="edit-mode-btn" id="editModeBtn">✏️ 편집 모드</button>
   </div>
   <div class="filters">
-    <div class="text-search-wrap">
-      <input class="text-search-input" id="textSearchInput" placeholder="전체 검색..." autocomplete="off">
-      <button class="text-search-clear" id="textSearchClear">✕</button>
-      <div class="text-search-dropdown" id="textSearchDropdown"></div>
-    </div>
-    <div class="brand-filter-wrap">
-      <input class="brand-filter-input" id="brandFilterInput" placeholder="브랜드 검색..." autocomplete="off">
-      <button class="brand-filter-clear" id="brandFilterClear">✕</button>
-      <div class="brand-filter-dropdown" id="brandFilterDropdown">
-        <div class="brand-filter-search-results" id="brandSearchResults"></div>
-        <div class="brand-filter-divider" id="brandFilterDivider"></div>
-        <div class="brand-filter-section-label">전체 브랜드</div>
-        <div class="brand-filter-all-list" id="brandAllList"></div>
+    <div class="filters-row1">
+      <div class="brand-filter-wrap">
+        <input class="brand-filter-input" id="brandFilterInput" placeholder="브랜드 검색..." autocomplete="off">
+        <button class="brand-filter-clear" id="brandFilterClear">✕</button>
+        <div class="brand-filter-dropdown" id="brandFilterDropdown">
+          <div class="brand-filter-search-results" id="brandSearchResults"></div>
+          <div class="brand-filter-divider" id="brandFilterDivider"></div>
+          <div class="brand-filter-section-label">전체 브랜드</div>
+          <div class="brand-filter-all-list" id="brandAllList"></div>
+        </div>
+        <input type="hidden" id="brandFilter" value="">
       </div>
-      <input type="hidden" id="brandFilter" value="">
+      <input type="date" class="filter-date" id="dateStart">
+      <span style="color:#ccc;font-size:13px;">~</span>
+      <input type="date" class="filter-date" id="dateEnd">
+      <button class="filter-month-btn" onclick="applyMonthFilter()">최근 1개월</button>
+      <button class="filter-btn" onclick="applyFilters()">필터 적용</button>
+      <button class="reset-btn" onclick="resetFilters()">초기화</button>
     </div>
-    <input type="date" class="filter-date" id="dateStart">
-    <span style="color:#ccc;font-size:13px;">~</span>
-    <input type="date" class="filter-date" id="dateEnd">
-    <button class="filter-month-btn" onclick="applyMonthFilter()">최근 1개월</button>
-    <button class="filter-btn" onclick="applyFilters()">필터 적용</button>
-    <button class="reset-btn" onclick="resetFilters()">초기화</button>
-    <div class="sort-wrap">
-      <button class="sort-btn" id="sortBtn" onclick="toggleSortDropdown()">↕ 정렬 <span id="sortLabel">날짜 최신순</span></button>
-      <div class="sort-dropdown" id="sortDropdown">
-        <div class="sort-option selected" data-sort="date_desc" onclick="applySort('date_desc')">날짜 최신순 <span class="sort-check">✓</span></div>
-        <div class="sort-option" data-sort="date_asc" onclick="applySort('date_asc')">날짜 오래된순 <span class="sort-check">✓</span></div>
-        <div class="sort-option" data-sort="reaction_desc" onclick="applySort('reaction_desc')">공감 많은순 <span class="sort-check">✓</span></div>
+    <div class="filters-row2">
+      <div class="text-search-wrap">
+        <input class="text-search-input" id="textSearchInput" placeholder="전체 텍스트 검색..." autocomplete="off">
+        <button class="text-search-clear" id="textSearchClear">✕</button>
+        <div class="text-search-dropdown" id="textSearchDropdown"></div>
+      </div>
+      <div class="sort-wrap">
+        <button class="sort-btn" id="sortBtn" onclick="toggleSortDropdown()">↕ 정렬 <span id="sortLabel">날짜 최신순</span></button>
+        <div class="sort-dropdown" id="sortDropdown">
+          <div class="sort-option selected" data-sort="date_desc" onclick="applySort('date_desc')">날짜 최신순 <span class="sort-check">✓</span></div>
+          <div class="sort-option" data-sort="date_asc" onclick="applySort('date_asc')">날짜 오래된순 <span class="sort-check">✓</span></div>
+          <div class="sort-option" data-sort="reaction_desc" onclick="applySort('reaction_desc')">공감 많은순 <span class="sort-check">✓</span></div>
+        </div>
       </div>
     </div>
   </div>
@@ -617,13 +623,12 @@ function getPageSearchText(page) {
 
 function applyTextSearch() {
   const q = textSearchQuery.toLowerCase().trim();
-  const gallery = document.getElementById('gallery');
   if (!q) {
-    // 검색어 없으면 전체 카드 다시 표시
-    document.querySelectorAll('.card').forEach(c => c.style.display = '');
+    // 검색어 없으면 전체 카드 표시
+    document.querySelectorAll('#gallery .card').forEach(c => c.style.display = '');
     return;
   }
-  document.querySelectorAll('.card').forEach(card => {
+  document.querySelectorAll('#gallery .card').forEach(card => {
     const pageId = card.dataset.pageId;
     const page = allPages.find(p => p._id === pageId);
     if (!page) { card.style.display = 'none'; return; }
@@ -1142,6 +1147,8 @@ function renderGallery(pages, isAppend = false) {
     wrap.querySelector('#loadMoreBtn').addEventListener('click', fetchMorePages);
     gallery.appendChild(wrap);
   }
+  // 검색어가 있으면 새로 렌더된 카드에도 필터 적용
+  if (textSearchQuery) applyTextSearch();
 }
 
 // ── 캐러셀 ──────────────────────────────────────────
