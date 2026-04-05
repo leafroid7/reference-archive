@@ -430,20 +430,27 @@ let currentModalPageId = null;
 
 function saveReactions() { localStorage.setItem('reactions', JSON.stringify(reactionData)); }
 
-async function syncReactionToNotion(pageId, delta) {
+async function syncReactionToNotion(pageId, emoji, delta) {
   try {
     const res = await fetch('/api/notion?action=updateReaction', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pageId, delta })
+      body: JSON.stringify({ pageId, emoji, delta })
     });
     const data = await res.json();
-    if (data.success && typeof data.total === 'number') {
-      // allPages 캐시 업데이트 → 이후 getTotalReactions가 올바른 값 반환
+    if (data.success) {
+      // allPages 캐시 업데이트
       const page = allPages.find(p => p._id === pageId);
       if (page) {
-        if (!page.properties['공감수']) page.properties['공감수'] = { number: 0 };
-        page.properties['공감수'].number = data.total;
+        if (typeof data.total === 'number') {
+          if (!page.properties['공감수']) page.properties['공감수'] = { number: 0 };
+          page.properties['공감수'].number = data.total;
+        }
+        if (data.detail) {
+          // 공감 상세 캐시 업데이트 → 이모지별 카운트 즉시 반영
+          if (!page.properties['공감 상세']) page.properties['공감 상세'] = { rich_text: [] };
+          page.properties['공감 상세'].rich_text = [{ plain_text: JSON.stringify(data.detail) }];
+        }
       }
     }
   } catch (e) {
@@ -866,12 +873,22 @@ function getTotalReactions(pageId) {
     .reduce((sum, [, v]) => sum + v, 0);
 }
 
+function getNotionDetail(pageId) {
+  const page = allPages.find(p => p._id === pageId);
+  const raw = page?.properties?.['공감 상세']?.rich_text?.[0]?.plain_text || '{}';
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
 function buildReactionHTML(pageId) {
   const r = reactionData[pageId] || {};
-  // DEFAULT + 커스텀 이모지 모두 포함
-  const allEmojis = [...DEFAULT_REACTIONS, ...Object.keys(r).filter(k => !k.startsWith('_user_') && !DEFAULT_REACTIONS.includes(k))];
+  const notionDetail = getNotionDetail(pageId);
+  // DEFAULT + 커스텀 이모지 모두 포함 (로컬 + Notion 키 합집합)
+  const notionEmojis = Object.keys(notionDetail).filter(k => !DEFAULT_REACTIONS.includes(k));
+  const localEmojis = Object.keys(r).filter(k => !k.startsWith('_user_') && !DEFAULT_REACTIONS.includes(k) && !notionEmojis.includes(k));
+  const allEmojis = [...DEFAULT_REACTIONS, ...notionEmojis, ...localEmojis];
   let html = allEmojis.map(emoji => {
-    const count = r[emoji] || 0;
+    // 이모지별 카운트: Notion 우선, 없으면 로컬
+    const count = notionDetail[emoji] ?? r[emoji] ?? 0;
     if (!count && !DEFAULT_REACTIONS.includes(emoji)) return '';
     const active = r[`_user_${emoji}`] ? 'active' : '';
     return `<button class="reaction-btn ${active}" data-page="${pageId}" data-emoji="${emoji}">${emoji}<span class="reaction-count">${count||''}</span></button>`;
@@ -895,7 +912,7 @@ document.getElementById('gallery').addEventListener('click', (e) => {
     if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
     reactionData[pageId][uk] = !had;
     saveReactions();
-    syncReactionToNotion(pageId, delta);
+    syncReactionToNotion(pageId, emoji, delta);
     rb.closest('.card')?.querySelector('.card-reactions')?.setOf?.();
     const card = rb.closest('.card');
     if (card) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
@@ -935,7 +952,7 @@ document.getElementById('emojiPicker').addEventListener('click', e => {
   if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
   reactionData[pageId][uk] = !had;
   saveReactions();
-  syncReactionToNotion(pageId, delta);
+  syncReactionToNotion(pageId, emoji, delta);
   document.querySelectorAll('.card').forEach(card => {
     if (card.dataset.pageId === pageId)
       card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);

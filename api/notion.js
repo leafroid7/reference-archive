@@ -94,6 +94,8 @@ module.exports = async (req, res) => {
           ...(p['인사이트 (내가 배운 것)'] ? { '인사이트 (내가 배운 것)': { rich_text: [{ text: { content: p['인사이트 (내가 배운 것)'] } }] } } : {}),
           ...(p['출처 URL'] ? { '출처 URL': { url: p['출처 URL'] } } : {}),
           ...(p['태그']?.length ? { '태그': { multi_select: p['태그'].map(n => ({ name: n })) } } : {}),
+          '공감 상세': { rich_text: [{ text: { content: '{}' } }] },
+          '공감수': { number: 0 },
         }
       });
 
@@ -176,23 +178,38 @@ module.exports = async (req, res) => {
         req.on('data', chunk => data += chunk);
         req.on('end', () => resolve(JSON.parse(data)));
       });
-      const { pageId, delta } = body;
-      if (!pageId || typeof delta !== 'number') {
-        return res.status(400).json({ error: 'pageId and delta required' });
+      const { pageId, emoji, delta } = body;
+      if (!pageId || !emoji || typeof delta !== 'number') {
+        return res.status(400).json({ error: 'pageId, emoji and delta required' });
       }
 
-      const newTotal = await withReactionLock(pageId, async () => {
+      const result = await withReactionLock(pageId, async () => {
         const page = await notion.pages.retrieve({ page_id: pageId });
-        const current = page.properties['공감수']?.number ?? 0;
-        const updated = Math.max(0, current + delta);
+
+        // 공감 상세 JSON 읽기 (비어있으면 {})
+        const detailRaw = page.properties['공감 상세']?.rich_text?.[0]?.plain_text || '{}';
+        let detail;
+        try { detail = JSON.parse(detailRaw); } catch { detail = {}; }
+
+        // 이모지별 카운트 업데이트
+        detail[emoji] = Math.max(0, (detail[emoji] || 0) + delta);
+        if (detail[emoji] === 0) delete detail[emoji];
+
+        // 총합 계산
+        const newTotal = Object.values(detail).reduce((s, v) => s + v, 0);
+
         await notion.pages.update({
           page_id: pageId,
-          properties: { '공감수': { number: updated } }
+          properties: {
+            '공감 상세': { rich_text: [{ text: { content: JSON.stringify(detail) } }] },
+            '공감수': { number: newTotal }
+          }
         });
-        return updated;
+
+        return { total: newTotal, detail };
       });
 
-      res.json({ success: true, total: newTotal });
+      res.json({ success: true, ...result });
 
     } else if (action === 'getBrands') {
       const db = await notion.databases.retrieve({ database_id: DATABASE_ID });
