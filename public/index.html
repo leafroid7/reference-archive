@@ -854,11 +854,12 @@ function extractBodyText(blocks) {
 
 // ── 반응 이모지 ──────────────────────────────────────────
 function getTotalReactions(pageId) {
-  // Notion 공감수 속성값이 있으면 우선 사용 (기기 통합 집계)
+  // 공감수 속성이 존재하면(null 포함) Notion 기준으로 처리
+  // null = Notion에 속성은 있으나 값 미입력 → 0으로 취급
   const page = allPages.find(p => p._id === pageId);
-  const notionTotal = page?.properties?.['공감수']?.number;
-  if (typeof notionTotal === 'number') return notionTotal;
-  // fallback: localStorage 합산 (Notion 속성 미설정 시)
+  const prop = page?.properties?.['공감수'];
+  if (prop !== undefined) return prop?.number ?? 0;
+  // fallback: Notion 속성 자체가 없을 때만 localStorage 합산
   const r = reactionData[pageId] || {};
   return Object.entries(r)
     .filter(([k, v]) => !k.startsWith('_user_') && typeof v === 'number')
