@@ -381,6 +381,10 @@
       <textarea id="ac-campaign"></textarea>
     </div>
     <div class="add-field">
+      <label>성공/실패 핵심 요인</label>
+      <textarea id="ac-factor"></textarea>
+    </div>
+    <div class="add-field">
       <label>적용해 볼 아이디어</label>
       <textarea id="ac-idea"></textarea>
     </div>
@@ -1338,6 +1342,7 @@ function openModal(pageId) {
   const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
   const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
   const campaign = props['주목할 캠페인/콘텐츠']?.rich_text?.map(t => t.plain_text).join('') || '';
+  const factor = props['성공/실패 핵심 요인']?.rich_text?.map(t => t.plain_text).join('') || '';
   const idea = props['적용해 볼 아이디어']?.rich_text?.map(t => t.plain_text).join('') || '';
   const insight = props['인사이트 (내가 배운 것)']?.rich_text?.map(t => t.plain_text).join('') || '';
   const tags = props['태그']?.multi_select?.map(t => t.name) || [];
@@ -1369,6 +1374,8 @@ function openModal(pageId) {
 
     ${eb && campaign !== undefined ? buildEditableToggle('주목할 캠페인/콘텐츠', campaign, '주목할 캠페인/콘텐츠', pageId)
                                    : buildToggle('주목할 캠페인/콘텐츠', campaign)}
+    ${eb && factor !== undefined ? buildEditableToggle('성공/실패 핵심 요인', factor, '성공/실패 핵심 요인', pageId)
+                                 : buildToggle('성공/실패 핵심 요인', factor)}
     ${eb && idea !== undefined ? buildEditableToggle('적용해 볼 아이디어', idea, '적용해 볼 아이디어', pageId)
                                 : buildToggle('적용해 볼 아이디어', idea)}
     ${eb && insight !== undefined ? buildEditableToggle('인사이트 (내가 배운 것)', insight, '인사이트 (내가 배운 것)', pageId)
@@ -1499,7 +1506,7 @@ function addMediaUrlField() {
 
 function openAddCardModal() {
   // 폼 초기화
-  ['ac-title','ac-brand','ac-overview','ac-campaign','ac-idea','ac-insight','ac-url','ac-tags'].forEach(id => {
+  ['ac-title','ac-brand','ac-overview','ac-campaign','ac-factor','ac-idea','ac-insight','ac-url','ac-tags'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('ac-copytypes').value = '';
@@ -1535,6 +1542,7 @@ document.getElementById('addSaveBtn').addEventListener('click', async () => {
       '카피 유형': [...selectedCopyTypes],
       '브랜드 개요': document.getElementById('ac-overview').value.trim(),
       '주목할 캠페인/콘텐츠': document.getElementById('ac-campaign').value.trim(),
+      '성공/실패 핵심 요인': document.getElementById('ac-factor').value.trim(),
       '적용해 볼 아이디어': document.getElementById('ac-idea').value.trim(),
       '인사이트 (내가 배운 것)': document.getElementById('ac-insight').value.trim(),
       '출처 URL': document.getElementById('ac-url').value.trim(),

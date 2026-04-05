@@ -90,6 +90,7 @@ module.exports = async (req, res) => {
           ...(p['카피 유형']?.length ? { '카피 유형': { multi_select: p['카피 유형'].map(n => ({ name: n })) } } : {}),
           ...(p['브랜드 개요'] ? { '브랜드 개요': { rich_text: [{ text: { content: p['브랜드 개요'] } }] } } : {}),
           ...(p['주목할 캠페인/콘텐츠'] ? { '주목할 캠페인/콘텐츠': { rich_text: [{ text: { content: p['주목할 캠페인/콘텐츠'] } }] } } : {}),
+          ...(p['성공/실패 핵심 요인'] ? { '성공/실패 핵심 요인': { rich_text: [{ text: { content: p['성공/실패 핵심 요인'] } }] } } : {}),
           ...(p['적용해 볼 아이디어'] ? { '적용해 볼 아이디어': { rich_text: [{ text: { content: p['적용해 볼 아이디어'] } }] } } : {}),
           ...(p['인사이트 (내가 배운 것)'] ? { '인사이트 (내가 배운 것)': { rich_text: [{ text: { content: p['인사이트 (내가 배운 것)'] } }] } } : {}),
           ...(p['출처 URL'] ? { '출처 URL': { url: p['출처 URL'] } } : {}),
@@ -165,6 +166,7 @@ module.exports = async (req, res) => {
       if (properties['날짜']) updateProps['날짜'] = { date: { start: properties['날짜'] } };
       if (properties['브랜드 개요'] !== undefined) updateProps['브랜드 개요'] = { rich_text: [{ text: { content: properties['브랜드 개요'] } }] };
       if (properties['주목할 캠페인/콘텐츠'] !== undefined) updateProps['주목할 캠페인/콘텐츠'] = { rich_text: [{ text: { content: properties['주목할 캠페인/콘텐츠'] } }] };
+      if (properties['성공/실패 핵심 요인'] !== undefined) updateProps['성공/실패 핵심 요인'] = { rich_text: [{ text: { content: properties['성공/실패 핵심 요인'] } }] };
       if (properties['적용해 볼 아이디어'] !== undefined) updateProps['적용해 볼 아이디어'] = { rich_text: [{ text: { content: properties['적용해 볼 아이디어'] } }] };
       if (properties['인사이트 (내가 배운 것)'] !== undefined) updateProps['인사이트 (내가 배운 것)'] = { rich_text: [{ text: { content: properties['인사이트 (내가 배운 것)'] } }] };
       if (properties['출처 URL'] !== undefined) updateProps['출처 URL'] = { url: properties['출처 URL'] || null };
