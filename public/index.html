@@ -256,6 +256,17 @@
     .media-url-add { background: none; border: 1px dashed #ddd; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 12px; padding: 6px 12px; width: 100%; margin-top: 4px; }
     .media-url-add:hover { border-color: #bbb; color: #777; }
 
+    .text-search-wrap { position: relative; }
+    .text-search-input { padding: 8px 30px 8px 12px; border: 1px solid #e5e5e5; border-radius: 20px; font-size: 13px; width: 200px; outline: none; transition: border-color 0.15s; }
+    .text-search-input:focus { border-color: #aaa; }
+    .text-search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #bbb; cursor: pointer; font-size: 13px; display: none; }
+    .text-search-clear.show { display: block; }
+    .text-search-dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: white; border: 1px solid #eee; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); z-index: 1000; min-width: 240px; max-height: 260px; overflow-y: auto; padding: 6px; }
+    .text-search-dropdown.show { display: block; }
+    .text-search-item { padding: 8px 12px; cursor: pointer; font-size: 13px; border-radius: 7px; }
+    .text-search-item:hover { background: rgba(254,240,138,0.35); }
+    .text-search-item .ts-brand { font-size: 11px; color: #bbb; margin-left: 6px; }
+    .text-search-item mark { background: #fff3b0; border-radius: 2px; padding: 0 1px; font-style: normal; }
     .loading { text-align: center; padding: 60px; color: #aaa; grid-column: 1/-1; }
     .load-more-wrap { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; padding: 12px 0 32px; gap: 6px; }
     .load-more-btn { padding: 10px 24px; background: white; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 13px; color: #555; transition: all 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
@@ -272,6 +283,11 @@
     <button class="edit-mode-btn" id="editModeBtn">✏️ 편집 모드</button>
   </div>
   <div class="filters">
+    <div class="text-search-wrap">
+      <input class="text-search-input" id="textSearchInput" placeholder="전체 검색..." autocomplete="off">
+      <button class="text-search-clear" id="textSearchClear">✕</button>
+      <div class="text-search-dropdown" id="textSearchDropdown"></div>
+    </div>
     <div class="brand-filter-wrap">
       <input class="brand-filter-input" id="brandFilterInput" placeholder="브랜드 검색..." autocomplete="off">
       <button class="brand-filter-clear" id="brandFilterClear">✕</button>
@@ -580,6 +596,102 @@ function applySort(sort) {
   loadPages(currentFilters.brand, currentFilters.dateStart, currentFilters.dateEnd);
 }
 
+// ── 전체 텍스트 검색 ──────────────────────────────────────────
+let textSearchQuery = '';
+let textSearchDebounce = null;
+
+function getPageSearchText(page) {
+  const p = page.properties;
+  const parts = [
+    p['콘텐츠']?.title?.map(t => t.plain_text).join('') || '',
+    p['브랜드명']?.select?.name || '',
+    p['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '',
+    p['주목할 캠페인/콘텐츠']?.rich_text?.map(t => t.plain_text).join('') || '',
+    p['성공/실패 핵심 요인']?.rich_text?.map(t => t.plain_text).join('') || '',
+    p['적용해 볼 아이디어']?.rich_text?.map(t => t.plain_text).join('') || '',
+    p['인사이트 (내가 배운 것)']?.rich_text?.map(t => t.plain_text).join('') || '',
+    (p['태그']?.multi_select || []).map(t => t.name).join(' '),
+  ];
+  return parts.join(' ').toLowerCase();
+}
+
+function applyTextSearch() {
+  const q = textSearchQuery.toLowerCase().trim();
+  const gallery = document.getElementById('gallery');
+  if (!q) {
+    // 검색어 없으면 전체 카드 다시 표시
+    document.querySelectorAll('.card').forEach(c => c.style.display = '');
+    return;
+  }
+  document.querySelectorAll('.card').forEach(card => {
+    const pageId = card.dataset.pageId;
+    const page = allPages.find(p => p._id === pageId);
+    if (!page) { card.style.display = 'none'; return; }
+    card.style.display = getPageSearchText(page).includes(q) ? '' : 'none';
+  });
+}
+
+function renderTextSearchDropdown(q) {
+  const dropdown = document.getElementById('textSearchDropdown');
+  if (!q) { dropdown.classList.remove('show'); return; }
+  const ql = q.toLowerCase();
+  // 로드된 카드 중 매칭 상위 6개 추천
+  const matches = allPages
+    .filter(p => getPageSearchText(p).includes(ql))
+    .slice(0, 6);
+  if (!matches.length) { dropdown.classList.remove('show'); return; }
+  const highlight = (text, q) => {
+    if (!text) return '';
+    const idx = text.toLowerCase().indexOf(q);
+    if (idx < 0) return text.replace(/</g,'&lt;');
+    return text.slice(0, idx).replace(/</g,'&lt;') +
+      '<mark>' + text.slice(idx, idx + q.length).replace(/</g,'&lt;') + '</mark>' +
+      text.slice(idx + q.length).replace(/</g,'&lt;');
+  };
+  dropdown.innerHTML = matches.map(p => {
+    const title = p.properties['콘텐츠']?.title?.map(t => t.plain_text).join('') || '(제목 없음)';
+    const brand = p.properties['브랜드명']?.select?.name || '';
+    return `<div class="text-search-item" onclick="selectTextSearchResult('${p._id}')">
+      ${highlight(title, q)}${brand ? `<span class="ts-brand">${brand}</span>` : ''}
+    </div>`;
+  }).join('');
+  dropdown.classList.add('show');
+}
+
+function selectTextSearchResult(pageId) {
+  document.getElementById('textSearchDropdown').classList.remove('show');
+  openModal(pageId);
+}
+
+function clearTextSearch() {
+  textSearchQuery = '';
+  document.getElementById('textSearchInput').value = '';
+  document.getElementById('textSearchClear').classList.remove('show');
+  document.getElementById('textSearchDropdown').classList.remove('show');
+  applyTextSearch();
+}
+
+document.getElementById('textSearchInput').addEventListener('input', e => {
+  textSearchQuery = e.target.value;
+  document.getElementById('textSearchClear').classList.toggle('show', !!textSearchQuery);
+  clearTimeout(textSearchDebounce);
+  textSearchDebounce = setTimeout(() => {
+    renderTextSearchDropdown(textSearchQuery);
+    applyTextSearch();
+  }, 200);
+});
+
+document.getElementById('textSearchInput').addEventListener('keydown', e => {
+  if (e.key === 'Escape') clearTextSearch();
+});
+
+document.getElementById('textSearchClear').addEventListener('click', clearTextSearch);
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.text-search-wrap'))
+    document.getElementById('textSearchDropdown').classList.remove('show');
+});
+
 async function loadBrands() {
   try {
     const res = await fetch(`${API_BASE}?action=getBrands`);
@@ -864,6 +976,12 @@ function extractBodyText(blocks) {
 }
 
 // ── 반응 이모지 ──────────────────────────────────────────
+function nl2br(text) {
+  if (!text) return '';
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/
+/g,'<br>');
+}
+
 function getTotalReactions(pageId) {
   // 공감수 속성이 존재하면(null 포함) Notion 기준으로 처리
   // null = Notion에 속성은 있으나 값 미입력 → 0으로 취급
@@ -1117,7 +1235,7 @@ function buildToggle(label, content) {
         <span>${label}</span>
         <span class="toggle-arrow" id="arr_${id}">▼</span>
       </button>
-      <div class="toggle-body" id="${id}">${content}</div>
+      <div class="toggle-body" id="${id}">${nl2br(content)}</div>
     </div>`;
 }
 
@@ -1366,8 +1484,8 @@ function openModal(pageId) {
 
     ${overview || eb ? `
       <div class="modal-overview-label">브랜드 개요</div>
-      ${eb ? buildEditableField('브랜드 개요', `<div class="modal-overview">${overview || '(없음)'}</div>`, '브랜드 개요', pageId, true)
-            : `<div class="modal-overview">${overview}</div>`}
+      ${eb ? buildEditableField('브랜드 개요', `<div class="modal-overview">${nl2br(overview) || '(없음)'}</div>`, '브랜드 개요', pageId, true)
+            : `<div class="modal-overview">${nl2br(overview)}</div>`}
     ` : ''}
 
     ${sourceUrl ? `<div class="modal-source"><a href="${sourceUrl}" target="_blank">🔗 출처 바로가기</a></div>` : ''}
@@ -1404,7 +1522,7 @@ function buildEditableToggle(label, value, fieldKey, pageId) {
       <div class="toggle-body" id="${id}">
         <div class="inline-edit-wrap" id="wrap_${fid}">
           <div class="field-row">
-            <div style="flex:1;white-space:pre-wrap;">${value || '(없음)'}</div>
+            <div style="flex:1;">${nl2br(value) || '(없음)'}</div>
             <button class="field-edit-btn" onclick="startInlineEdit('${fid}', '${fieldKey}', '${pageId}')" title="편집">✏️</button>
           </div>
           <div id="edit_${fid}" style="display:none;">
