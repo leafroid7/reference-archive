@@ -3,15 +3,6 @@ const { Client } = require('@notionhq/client');
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 
-// 동일 인스턴스 내 race condition 완화용 직렬화 큐
-const reactionLocks = new Map();
-async function withReactionLock(pageId, fn) {
-  const prev = reactionLocks.get(pageId) || Promise.resolve();
-  const next = prev.then(() => fn()).catch(() => fn());
-  reactionLocks.set(pageId, next.catch(() => {}));
-  return next;
-}
-
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
@@ -19,7 +10,12 @@ module.exports = async (req, res) => {
 
   try {
     if (action === 'getPages') {
-      const filters = [];
+      const filters = [
+        {
+          property: '업로드',
+          status: { equals: '게시 완료' }
+        }
+      ];
 
       if (filter_brand) {
         filters.push({
@@ -90,13 +86,10 @@ module.exports = async (req, res) => {
           ...(p['카피 유형']?.length ? { '카피 유형': { multi_select: p['카피 유형'].map(n => ({ name: n })) } } : {}),
           ...(p['브랜드 개요'] ? { '브랜드 개요': { rich_text: [{ text: { content: p['브랜드 개요'] } }] } } : {}),
           ...(p['주목할 캠페인/콘텐츠'] ? { '주목할 캠페인/콘텐츠': { rich_text: [{ text: { content: p['주목할 캠페인/콘텐츠'] } }] } } : {}),
-          ...(p['성공/실패 핵심 요인'] ? { '성공/실패 핵심 요인': { rich_text: [{ text: { content: p['성공/실패 핵심 요인'] } }] } } : {}),
           ...(p['적용해 볼 아이디어'] ? { '적용해 볼 아이디어': { rich_text: [{ text: { content: p['적용해 볼 아이디어'] } }] } } : {}),
           ...(p['인사이트 (내가 배운 것)'] ? { '인사이트 (내가 배운 것)': { rich_text: [{ text: { content: p['인사이트 (내가 배운 것)'] } }] } } : {}),
           ...(p['출처 URL'] ? { '출처 URL': { url: p['출처 URL'] } } : {}),
           ...(p['태그']?.length ? { '태그': { multi_select: p['태그'].map(n => ({ name: n })) } } : {}),
-          '공감 상세': { rich_text: [{ text: { content: '{}' } }] },
-          '공감수': { number: 0 },
         }
       });
 
@@ -166,52 +159,12 @@ module.exports = async (req, res) => {
       if (properties['날짜']) updateProps['날짜'] = { date: { start: properties['날짜'] } };
       if (properties['브랜드 개요'] !== undefined) updateProps['브랜드 개요'] = { rich_text: [{ text: { content: properties['브랜드 개요'] } }] };
       if (properties['주목할 캠페인/콘텐츠'] !== undefined) updateProps['주목할 캠페인/콘텐츠'] = { rich_text: [{ text: { content: properties['주목할 캠페인/콘텐츠'] } }] };
-      if (properties['성공/실패 핵심 요인'] !== undefined) updateProps['성공/실패 핵심 요인'] = { rich_text: [{ text: { content: properties['성공/실패 핵심 요인'] } }] };
       if (properties['적용해 볼 아이디어'] !== undefined) updateProps['적용해 볼 아이디어'] = { rich_text: [{ text: { content: properties['적용해 볼 아이디어'] } }] };
       if (properties['인사이트 (내가 배운 것)'] !== undefined) updateProps['인사이트 (내가 배운 것)'] = { rich_text: [{ text: { content: properties['인사이트 (내가 배운 것)'] } }] };
       if (properties['출처 URL'] !== undefined) updateProps['출처 URL'] = { url: properties['출처 URL'] || null };
 
       await notion.pages.update({ page_id: pageId, properties: updateProps });
       res.json({ success: true });
-
-    } else if (action === 'updateReaction') {
-      const body = await new Promise((resolve) => {
-        let data = '';
-        req.on('data', chunk => data += chunk);
-        req.on('end', () => resolve(JSON.parse(data)));
-      });
-      const { pageId, emoji, delta } = body;
-      if (!pageId || !emoji || typeof delta !== 'number') {
-        return res.status(400).json({ error: 'pageId, emoji and delta required' });
-      }
-
-      const result = await withReactionLock(pageId, async () => {
-        const page = await notion.pages.retrieve({ page_id: pageId });
-
-        // 공감 상세 JSON 읽기 (비어있으면 {})
-        const detailRaw = page.properties['공감 상세']?.rich_text?.[0]?.plain_text || '{}';
-        let detail;
-        try { detail = JSON.parse(detailRaw); } catch { detail = {}; }
-
-        // 이모지별 카운트 업데이트
-        detail[emoji] = Math.max(0, (detail[emoji] || 0) + delta);
-        if (detail[emoji] === 0) delete detail[emoji];
-
-        // 총합 계산
-        const newTotal = Object.values(detail).reduce((s, v) => s + v, 0);
-
-        await notion.pages.update({
-          page_id: pageId,
-          properties: {
-            '공감 상세': { rich_text: [{ text: { content: JSON.stringify(detail) } }] },
-            '공감수': { number: newTotal }
-          }
-        });
-
-        return { total: newTotal, detail };
-      });
-
-      res.json({ success: true, ...result });
 
     } else if (action === 'getBrands') {
       const db = await notion.databases.retrieve({ database_id: DATABASE_ID });
