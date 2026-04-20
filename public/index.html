@@ -104,7 +104,9 @@
     .lightbox-close { position: absolute; top: 16px; right: 20px; color: white; font-size: 28px; cursor: pointer; background: none; border: none; }
 
     /* 모달 우측 */
-    .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; }
+    .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; position: relative; }
+    .modal-close { position: absolute; top: 14px; right: 14px; font-size: 14px; cursor: pointer; color: #999; background: #f0f0f0; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; z-index: 5; }
+    .modal-close:hover { background: #e0e0e0; color: #333; }
     .modal-badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 10px; padding-right: 36px; }
     .modal-badge-divider { width: 1px; height: 14px; background: #ddd; margin: 0 2px; }
     .modal-title { font-size: 17px; font-weight: 700; line-height: 1.4; margin-bottom: 4px; }
@@ -497,6 +499,56 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('show');
 }
 
+// ── 본문 텍스트 추출 ──────────────────────────────────────────
+function renderRichText(arr) {
+  if (!arr?.length) return '';
+  return arr.map(t => {
+    let text = t.plain_text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const a = t.annotations || {};
+    if (a.bold) text = `<strong>${text}</strong>`;
+    if (a.italic) text = `<em>${text}</em>`;
+    if (a.strikethrough) text = `<s>${text}</s>`;
+    if (a.underline) text = `<u>${text}</u>`;
+    if (a.code) text = `<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-size:12px;">${text}</code>`;
+    if (a.color && a.color !== 'default') {
+      const colorMap = {gray:'#888',brown:'#9b6b4b',orange:'#d97706',yellow:'#b8860b',green:'#16a34a',blue:'#2563eb',purple:'#7c3aed',pink:'#db2777',red:'#dc2626',gray_background:'#f0f0f0',brown_background:'#fdf0e8',orange_background:'#fff7ed',yellow_background:'#fefce8',green_background:'#f0fdf4',blue_background:'#eff6ff',purple_background:'#faf5ff',pink_background:'#fdf2f8',red_background:'#fef2f2'};
+      const c = colorMap[a.color];
+      if (c) text = a.color.includes('background') ? `<span style="background:${c};padding:1px 3px;border-radius:3px;">${text}</span>` : `<span style="color:${c};">${text}</span>`;
+    }
+    if (t.href) text = `<a href="${t.href}" target="_blank" style="color:#3b82f6;text-decoration:underline;">${text}</a>`;
+    return text;
+  }).join('');
+}
+
+function extractBodyText(blocks) {
+  const lines = [];
+  for (const block of blocks) {
+    const type = block.type;
+    const getText = (b, key) => renderRichText(b[key]?.rich_text) || '';
+    if (type === 'paragraph') { const t = getText(block,'paragraph'); if (t) lines.push(`<div style="white-space:pre-wrap;margin-bottom:4px;">${t}</div>`); }
+    else if (type === 'heading_1') lines.push(`<div style="font-weight:700;font-size:15px;margin:8px 0 4px;">${getText(block,'heading_1')}</div>`);
+    else if (type === 'heading_2') lines.push(`<div style="font-weight:700;font-size:14px;margin:8px 0 4px;">${getText(block,'heading_2')}</div>`);
+    else if (type === 'heading_3') lines.push(`<div style="font-weight:700;font-size:13px;margin:8px 0 4px;">${getText(block,'heading_3')}</div>`);
+    else if (type === 'bulleted_list_item') {
+      lines.push(`<div style="padding-left:14px;position:relative;margin-bottom:3px;"><span style="position:absolute;left:4px;color:#aaa;">•</span>${getText(block,'bulleted_list_item')}</div>`);
+      if (block.children?.length) lines.push(`<div style="padding-left:16px;">${extractBodyText(block.children)}</div>`);
+    } else if (type === 'numbered_list_item') {
+      lines.push(`<div style="padding-left:14px;margin-bottom:3px;">${getText(block,'numbered_list_item')}</div>`);
+      if (block.children?.length) lines.push(`<div style="padding-left:16px;">${extractBodyText(block.children)}</div>`);
+    } else if (type === 'quote') {
+      lines.push(`<div style="border-left:3px solid #eee;padding-left:10px;color:#777;font-style:italic;margin:4px 0;">${getText(block,'quote')}</div>`);
+    } else if (type === 'toggle') {
+      const label = getText(block,'toggle');
+      const inner = block.children ? extractBodyText(block.children) : '';
+      const tid = 'tg_'+Math.random().toString(36).slice(2);
+      lines.push(`<div class="toggle-section" style="margin:4px 0;"><button class="toggle-header" data-toggle="${tid}"><span>${label}</span><span class="toggle-arrow" id="arr_${tid}">▼</span></button><div class="toggle-body" id="${tid}">${inner}</div></div>`);
+    } else if (type === 'column_list' || type === 'column') {
+      if (block.children) lines.push(extractBodyText(block.children));
+    }
+  }
+  return lines.join('');
+}
+
 // ── 토글 ──────────────────────────────────────────
 function buildToggle(label, content) {
   if (!content) return '';
@@ -542,7 +594,9 @@ function openModal(pageId) {
   const hasTypes = copyTypes.length > 0;
   const divider = hasBrand && hasTypes ? '<span class="modal-badge-divider"></span>' : '';
 
+  const bodyText = extractBodyText(page.blocks || []);
   document.getElementById('modalRight').innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">✕</button>
     <div class="modal-badge-row">
       ${brand ? `<span class="card-brand">${brand}</span>` : ''}
       ${divider}
@@ -555,9 +609,10 @@ function openModal(pageId) {
     ${buildToggle('주목할 캠페인/콘텐츠', campaign)}
     ${buildToggle('적용해 볼 아이디어', idea)}
     ${buildToggle('인사이트 (내가 배운 것)', insight)}
+    ${buildToggle('📄 본문 내용', bodyText)}
     ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
   `;
-
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
   document.getElementById('modalOverlay').classList.add('show');
 }
 
