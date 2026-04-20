@@ -4,43 +4,64 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>H&B 케이스 스터디</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#333333">
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
-    }
-  </script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗃️</text></svg>">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, 'Apple SD Gothic Neo', 'Pretendard', sans-serif; background: #f5f5f5; color: #333; }
 
     /* 헤더 */
-    .header { background: white; padding: 20px 32px; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
-    .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+    .header { background: white; padding: 16px 32px; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .edit-mode-btn { padding: 6px 14px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .edit-mode-btn.active { background: #fff8ec; color: #d97706; border-color: #f5c06a; font-weight: 600; }
     .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .filter-select, .filter-date { padding: 7px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; }
+    .filter-date { padding: 7px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; }
     .filter-btn { padding: 7px 14px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
     .filter-btn:hover { background: #555; }
     .filter-month-btn { padding: 7px 14px; background: #f0f0f0; color: #555; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
     .filter-month-btn:hover { background: #e0e0e0; }
     .reset-btn { padding: 7px 14px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 13px; }
 
+    /* 브랜드 검색 필터 */
+    .brand-filter-wrap { position: relative; }
+    .brand-filter-input { padding: 7px 30px 7px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: white; cursor: text; min-width: 130px; }
+    .brand-filter-input:focus { outline: none; border-color: #aaa; }
+    .brand-filter-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #bbb; cursor: pointer; font-size: 14px; display: none; padding: 0; line-height: 1; }
+    .brand-filter-clear.show { display: block; }
+    .brand-filter-dropdown { position: absolute; top: calc(100% + 4px); left: 0; min-width: 180px; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 200; display: none; overflow: hidden; }
+    .brand-filter-dropdown.show { display: block; }
+    .brand-filter-search-results { max-height: 160px; overflow-y: auto; padding: 4px; }
+    .brand-filter-divider { height: 1px; background: #f0f0f0; margin: 4px 0; display: none; }
+    .brand-filter-all-list { max-height: 160px; overflow-y: auto; padding: 4px; }
+    .brand-filter-item { padding: 8px 12px; font-size: 13px; cursor: pointer; border-radius: 7px; }
+    .brand-filter-item:hover { background: rgba(254,240,138,0.35); }
+    .brand-filter-item.selected { background: #eff6ff; color: #3b82f6; font-weight: 600; }
+    .brand-filter-section-label { font-size: 10px; color: #bbb; font-weight: 600; padding: 6px 12px 2px; letter-spacing: 0.5px; }
+
+    /* 정렬 */
+    .sort-wrap { position: relative; }
+    .sort-btn { padding: 7px 14px; background: transparent; color: #555; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+    .sort-btn.active { border-color: #888; color: #333; background: #f5f5f5; }
+    .sort-dropdown { position: absolute; top: calc(100% + 4px); left: 0; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 200; min-width: 160px; padding: 4px; display: none; }
+    .sort-dropdown.show { display: block; }
+    .sort-option { padding: 9px 14px; font-size: 13px; cursor: pointer; border-radius: 7px; display: flex; justify-content: space-between; }
+    .sort-option:hover { background: rgba(254,240,138,0.35); }
+    .sort-option.selected { color: #3b82f6; font-weight: 600; }
+    .sort-check { display: none; }
+    .sort-option.selected .sort-check { display: inline; }
+
     /* 갤러리 */
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 24px 32px; align-items: start; }
 
     /* 카드 */
-    .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+    .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; position: relative; }
     .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
     .card-media { width: 100%; background: #111; overflow: hidden; aspect-ratio: 4/3; position: relative; }
-    .card-media img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+    .card-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .card-media .video-thumb { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #111; position: relative; }
     .card-media .video-thumb img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
     .card-media .video-thumb .play-icon { position: absolute; width: 48px; height: 48px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 1; }
-    .card-media iframe { width: 100%; height: 100%; border: none; display: block; }
     .card-media .no-media { display: flex; align-items: center; justify-content: center; height: 100%; color: #bbb; font-size: 14px; background: #f0f0f0; }
     .card-body { padding: 14px 16px; }
     .badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 8px; }
@@ -58,20 +79,20 @@
     .reaction-btn:hover, .reaction-btn.active { background: #fff3f3; border-color: #ffb3b3; }
     .reaction-count { font-size: 11px; color: #888; }
     .add-reaction-btn { padding: 3px 9px; border: 1px dashed #ddd; border-radius: 20px; background: white; cursor: pointer; font-size: 15px; color: #bbb; }
+    .reaction-total { font-size: 11px; color: #bbb; padding: 2px 6px; background: #f5f5f5; border-radius: 10px; margin-left: auto; white-space: nowrap; flex-shrink: 0; }
 
     /* 이모지 피커 */
-    .emoji-picker { display: none; position: fixed; background: white; border: 1px solid #eee; border-radius: 12px; padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 500; flex-wrap: wrap; gap: 6px; width: 220px; }
+    .emoji-picker { display: none; position: fixed; background: white; border: 1px solid #eee; border-radius: 12px; padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 99998; flex-wrap: wrap; gap: 6px; width: 220px; }
     .emoji-picker.show { display: flex; }
     .emoji-option { font-size: 20px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
     .emoji-option:hover { background: #f5f5f5; }
 
     /* 모달 오버레이 */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
-    .modal-overlay.show { display: flex; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.show { display: flex !important; }
 
     /* 모달 본체 */
     .modal-wrap { position: relative; width: 100%; max-width: 960px; }
-    .modal-close { position: absolute; top: -36px; right: 0; font-size: 22px; cursor: pointer; color: white; z-index: 10; line-height: 1; background: none; border: none; }
     .modal { background: white; border-radius: 16px; overflow: hidden; display: flex; max-height: 85vh; }
 
     /* 모달 좌측: 캐러셀 */
@@ -83,29 +104,22 @@
     .carousel-slide iframe { width: 100%; aspect-ratio: 16/9; border: none; max-height: 100%; }
     .carousel-slide video { max-width: 100%; max-height: 100%; }
     .carousel-slide .no-media { color: #555; font-size: 14px; }
-
-    /* 캐러셀 버튼 — 항상 DOM에 존재, show/hide로 제어 */
-    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; user-select: none; }
-    .carousel-btn:hover { background: rgba(255,255,255,0.35); }
+    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s, transform 0.2s; user-select: none; }
+    .carousel-btn:hover { background: rgba(255,255,255,0.85); color: #111; transform: translateY(-50%) scale(1.12); }
     .carousel-btn.prev { left: 10px; }
     .carousel-btn.next { right: 10px; }
     .carousel-btn.hidden { display: none; }
-
-    .carousel-footer { background: #111; padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .carousel-footer { background: #111; padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
     .carousel-counter { color: rgba(255,255,255,0.6); font-size: 11px; }
     .carousel-dots { display: flex; gap: 6px; }
     .carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.2s; border: none; padding: 0; }
     .carousel-dot.active { background: white; }
 
-    /* 이미지 확대 */
-    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 600; align-items: center; justify-content: center; cursor: zoom-out; }
-    .lightbox.show { display: flex; }
-    .lightbox img { max-width: 92vw; max-height: 92vh; object-fit: contain; border-radius: 4px; }
-    .lightbox-close { position: absolute; top: 16px; right: 20px; color: white; font-size: 28px; cursor: pointer; background: none; border: none; }
-
     /* 모달 우측 */
-    .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; }
-    .modal-badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 10px; }
+    .modal-right { flex: 1; overflow-y: auto; padding: 28px 24px; position: relative; }
+    .modal-close { position: absolute; top: 14px; right: 14px; font-size: 14px; cursor: pointer; color: #999; background: #f0f0f0; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; z-index: 5; }
+    .modal-close:hover { background: #e0e0e0; color: #333; }
+    .modal-badge-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 10px; padding-right: 36px; }
     .modal-badge-divider { width: 1px; height: 14px; background: #ddd; margin: 0 2px; }
     .modal-title { font-size: 17px; font-weight: 700; line-height: 1.4; margin-bottom: 4px; }
     .modal-date { font-size: 12px; color: #bbb; margin-bottom: 16px; }
@@ -114,6 +128,7 @@
     .modal-source { margin-bottom: 14px; }
     .modal-source a { font-size: 13px; color: #3b82f6; word-break: break-all; text-decoration: none; }
     .modal-source a:hover { text-decoration: underline; }
+    .modal-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 16px; }
 
     /* 토글 */
     .toggle-section { border: 1px solid #eee; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
@@ -123,7 +138,94 @@
     .toggle-arrow.open { transform: rotate(180deg); }
     .toggle-body { padding: 12px 16px; font-size: 13px; color: #555; line-height: 1.7; display: none; }
     .toggle-body.open { display: block; }
-    .modal-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 16px; }
+
+    /* 본문 블록 */
+    .block-text { white-space: pre-wrap; margin-bottom: 4px; }
+    .block-heading { font-weight: 700; margin: 8px 0 4px; }
+    .block-heading-1 { font-size: 15px; }
+    .block-heading-2 { font-size: 14px; }
+    .block-heading-3 { font-size: 13px; }
+    .block-bulleted { padding-left: 14px; position: relative; margin-bottom: 3px; }
+    .block-bulleted::before { content: "•"; position: absolute; left: 4px; color: #aaa; }
+    .block-numbered { padding-left: 14px; margin-bottom: 3px; }
+    .block-quote { border-left: 3px solid #eee; padding-left: 10px; color: #777; font-style: italic; margin: 4px 0; }
+
+    /* 편집 모드 */
+    .field-edit-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: #ccc; padding: 2px 4px; border-radius: 4px; }
+    .field-edit-btn:hover { color: #888; }
+    .inline-edit-wrap { margin-bottom: 12px; }
+    .inline-edit-wrap textarea, .inline-edit-wrap input { width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; padding: 8px 10px; font-size: 14px; font-family: inherit; resize: vertical; background: #fafafa; }
+    .inline-edit-wrap textarea:focus, .inline-edit-wrap input:focus { outline: none; border-color: #aaa; background: white; }
+    .inline-edit-actions { display: flex; gap: 6px; margin-top: 6px; }
+    .inline-save-btn { padding: 5px 14px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    .inline-cancel-btn { padding: 5px 10px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+    /* 잠금 해제 모달 */
+    .unlock-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; align-items: center; justify-content: center; }
+    .unlock-overlay.show { display: flex !important; }
+    .unlock-modal { background: white; border-radius: 16px; padding: 28px; width: 300px; text-align: center; }
+    .unlock-modal h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .unlock-modal p { font-size: 13px; color: #888; margin-bottom: 16px; }
+    .unlock-input { width: 100%; border: 1px solid #eee; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 10px; box-sizing: border-box; text-align: center; }
+    .unlock-input:focus { outline: none; border-color: #aaa; }
+    .unlock-btn { width: 100%; padding: 10px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .unlock-error { font-size: 12px; color: #e55; margin-top: 8px; display: none; }
+
+    /* 카드 추가 모달 */
+    .add-card-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9000; align-items: center; justify-content: center; padding: 20px; }
+    .add-card-overlay.show { display: flex !important; }
+    .add-card-modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 540px; max-height: 88vh; overflow-y: auto; }
+    .add-field { margin-bottom: 14px; }
+    .add-field label { display: block; font-size: 12px; color: #888; font-weight: 600; margin-bottom: 5px; }
+    .add-field input, .add-field textarea { width: 100%; border: 1px solid #eee; border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; box-sizing: border-box; }
+    .add-field textarea { min-height: 70px; resize: vertical; }
+    .add-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+    .add-save-btn { padding: 9px 20px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .add-cancel-btn { padding: 9px 16px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .add-floating-btn { position: fixed; bottom: 28px; right: 28px; background: #333; color: white; border: none; border-radius: 50%; width: 52px; height: 52px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.2); display: none; z-index: 200; align-items: center; justify-content: center; }
+    .add-floating-btn.show { display: flex; }
+    .add-floating-btn:hover { background: #555; }
+
+    /* 브랜드 자동완성 */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; display: none; padding: 6px; }
+    .autocomplete-list.show { display: block; }
+    .autocomplete-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; font-size: 13px; border-radius: 7px; }
+    .autocomplete-item:hover { background: rgba(254,240,138,0.35); }
+    .ac-hint { font-size: 11px; color: #bbb; display: none; }
+    .autocomplete-item:hover .ac-hint { display: inline; }
+    .autocomplete-new { color: #3b82f6; font-style: italic; }
+
+    /* 미디어 URL */
+    .media-url-list { margin-top: 6px; }
+    .media-url-item { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; cursor: grab; }
+    .media-url-item.dragging { opacity: 0.4; }
+    .drag-handle { color: #ccc; font-size: 16px; cursor: grab; padding: 0 2px; user-select: none; }
+    .media-url-item input { flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+    .media-url-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 16px; padding: 0 4px; }
+    .media-url-remove:hover { color: #e55; }
+    .media-url-add { background: none; border: 1px dashed #ddd; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 12px; padding: 6px 12px; width: 100%; margin-top: 4px; }
+    .media-url-add:hover { border-color: #bbb; color: #777; }
+
+    /* 더보기 */
+    .load-more-wrap { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; padding: 12px 0 32px; gap: 6px; }
+    .load-more-btn { padding: 10px 24px; background: white; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 13px; color: #555; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .load-more-btn:hover { background: #f5f5f5; }
+    .load-more-count { font-size: 11px; color: #bbb; }
+
+    /* 라이트박스 */
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; overflow-y: auto; }
+    .lightbox.show { display: block !important; }
+    .lightbox-inner { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 64px 24px; box-sizing: border-box; }
+    .lightbox img { border-radius: 4px; display: block; }
+    .lightbox img.fit-screen { max-width: min(96vw, 1200px); max-height: 88vh; width: auto; height: auto; object-fit: contain; }
+    .lightbox img.zoom-original { max-width: none; width: auto; height: auto; }
+    .lightbox img.zoom-in { max-width: none; width: 150%; height: auto; }
+    .lightbox-close { position: fixed; top: 14px; right: 18px; color: white; font-size: 18px; cursor: pointer; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 100000; }
+    .lightbox-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100000; }
+    .lightbox-ctrl-btn { padding: 7px 14px; background: rgba(120,100,200,0.45); color: white; border: 1px solid rgba(160,140,220,0.5); border-radius: 20px; cursor: pointer; font-size: 12px; backdrop-filter: blur(6px); transition: background 0.15s; white-space: nowrap; }
+    .lightbox-ctrl-btn:hover { background: rgba(120,100,200,0.72); }
+    .lightbox-ctrl-btn.active { background: rgba(110,85,200,0.9); border-color: rgba(160,140,255,0.8); }
 
     /* 반응형 */
     @media (max-width: 700px) {
@@ -132,7 +234,9 @@
       .modal-right { flex: 1; overflow-y: auto; padding: 16px; min-height: 0; }
       .carousel { height: 100%; }
       .gallery { padding: 16px; gap: 14px; }
-      .header { padding: 16px; }
+      .header { padding: 12px 16px; }
+      .modal-badge-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .modal-badge-divider { display: none; }
     }
 
     .loading { text-align: center; padding: 60px; color: #aaa; grid-column: 1/-1; }
@@ -142,17 +246,36 @@
 <body>
 
 <div class="header">
-  <h1>🗂 H&B 케이스 스터디</h1>
+  <div class="header-top">
+    <h1>🗃️ H&B 케이스 스터디</h1>
+    <button class="edit-mode-btn" id="editModeBtn">✏️ 편집 모드</button>
+  </div>
   <div class="filters">
-    <select class="filter-select" id="brandFilter">
-      <option value="">전체 브랜드</option>
-    </select>
+    <div class="brand-filter-wrap">
+      <input class="brand-filter-input" id="brandFilterInput" placeholder="브랜드 검색..." autocomplete="off">
+      <button class="brand-filter-clear" id="brandFilterClear">✕</button>
+      <div class="brand-filter-dropdown" id="brandFilterDropdown">
+        <div class="brand-filter-search-results" id="brandSearchResults"></div>
+        <div class="brand-filter-divider" id="brandFilterDivider"></div>
+        <div class="brand-filter-section-label">전체 브랜드</div>
+        <div class="brand-filter-all-list" id="brandAllList"></div>
+      </div>
+      <input type="hidden" id="brandFilter" value="">
+    </div>
     <input type="date" class="filter-date" id="dateStart">
     <span style="color:#ccc;font-size:13px;">~</span>
     <input type="date" class="filter-date" id="dateEnd">
     <button class="filter-month-btn" onclick="applyMonthFilter()">최근 1개월</button>
     <button class="filter-btn" onclick="applyFilters()">필터 적용</button>
     <button class="reset-btn" onclick="resetFilters()">초기화</button>
+    <div class="sort-wrap">
+      <button class="sort-btn" id="sortBtn" onclick="toggleSortDropdown()">↕ <span id="sortLabel">날짜 최신순</span></button>
+      <div class="sort-dropdown" id="sortDropdown">
+        <div class="sort-option selected" data-sort="date_desc" onclick="applySort('date_desc')">날짜 최신순 <span class="sort-check">✓</span></div>
+        <div class="sort-option" data-sort="date_asc" onclick="applySort('date_asc')">날짜 오래된순 <span class="sort-check">✓</span></div>
+        <div class="sort-option" data-sort="reaction_desc" onclick="applySort('reaction_desc')">공감 많은순 <span class="sort-check">✓</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -163,7 +286,6 @@
 <!-- 모달 -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-wrap">
-    <button class="modal-close" id="modalCloseBtn">✕</button>
     <div class="modal" id="modal">
       <div class="modal-left" id="modalLeft">
         <div class="carousel" id="carousel">
@@ -181,10 +303,66 @@
   </div>
 </div>
 
+<!-- 잠금 해제 모달 -->
+<div class="unlock-overlay" id="unlockOverlay">
+  <div class="unlock-modal">
+    <h3>🔐 편집 모드</h3>
+    <p>편집 코드를 입력하세요</p>
+    <input class="unlock-input" id="unlockInput" type="password" placeholder="••••••">
+    <button class="unlock-btn" id="unlockSubmit">확인</button>
+    <div class="unlock-error" id="unlockError">코드가 올바르지 않습니다</div>
+  </div>
+</div>
+
+<!-- 카드 추가 모달 -->
+<div class="add-card-overlay" id="addCardOverlay">
+  <div class="add-card-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:16px;font-weight:700;">➕ 새 카드 추가</h3>
+      <button onclick="document.getElementById('addCardOverlay').classList.remove('show')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#bbb;">✕</button>
+    </div>
+    <div class="add-field"><label>콘텐츠 제목 *</label><input id="ac-title" type="text" placeholder="제목을 입력하세요"></div>
+    <div class="add-field">
+      <label>브랜드명</label>
+      <div class="autocomplete-wrap">
+        <input id="ac-brand" type="text" placeholder="브랜드명 입력 또는 선택" autocomplete="off">
+        <div class="autocomplete-list" id="brandAutocomplete"></div>
+      </div>
+    </div>
+    <div class="add-field"><label>날짜</label><input id="ac-date" type="date"></div>
+    <div class="add-field">
+      <label>카피 유형</label>
+      <div id="ac-copytypes-wrap" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 0;"></div>
+      <input type="hidden" id="ac-copytypes">
+    </div>
+    <div class="add-field"><label>브랜드 개요</label><textarea id="ac-overview"></textarea></div>
+    <div class="add-field"><label>주목할 캠페인/콘텐츠</label><textarea id="ac-campaign"></textarea></div>
+    <div class="add-field"><label>적용해 볼 아이디어</label><textarea id="ac-idea"></textarea></div>
+    <div class="add-field"><label>인사이트 (내가 배운 것)</label><textarea id="ac-insight"></textarea></div>
+    <div class="add-field"><label>출처 URL</label><input id="ac-url" type="text" placeholder="https://..."></div>
+    <div class="add-field"><label>태그 (쉼표로 구분)</label><input id="ac-tags" type="text" placeholder="예: SNS, 뷰티"></div>
+    <div class="add-field">
+      <label>이미지/영상 URL</label>
+      <div class="media-url-list" id="mediaUrlList"></div>
+      <button class="media-url-add" onclick="addMediaUrlField()">+ URL 추가</button>
+    </div>
+    <div class="add-actions">
+      <button class="add-cancel-btn" id="addCancelBtn">취소</button>
+      <button class="add-save-btn" id="addSaveBtn">저장</button>
+    </div>
+  </div>
+</div>
+<button class="add-floating-btn" id="addFloatingBtn" title="새 카드 추가">＋</button>
+
 <!-- 라이트박스 -->
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose">✕</button>
-  <img id="lightboxImg" src="" alt="">
+  <div class="lightbox-inner"><img id="lightboxImg" src="" alt="" class="fit-screen"></div>
+  <div class="lightbox-controls">
+    <button class="lightbox-ctrl-btn active" id="lbFit">화면 맞춤</button>
+    <button class="lightbox-ctrl-btn" id="lbOriginal">원본 크기</button>
+    <button class="lightbox-ctrl-btn" id="lbZoomIn">150% 확대</button>
+  </div>
 </div>
 
 <!-- 이모지 피커 -->
@@ -194,74 +372,183 @@
 const API_BASE = '/api/notion';
 const DEFAULT_REACTIONS = ['❤️', '👍', '👏', '🔥', '💡'];
 const EXTRA_EMOJIS = ['😍', '🎯', '👀', '💎', '🙌', '✨', '📊', '😮', '📌', '💬'];
+const EDIT_CODE = 'underdogvibe';
+const PAGE_SIZE = 20;
 
-let allPages = [];
-let reactionData = JSON.parse(localStorage.getItem('reactions') || '{}');
-let carouselIndex = 0;
-let carouselItems = [];
-let touchStartX = 0;
-let touchEndX = 0;
+let allPages = [], reactionData = JSON.parse(localStorage.getItem('reactions') || '{}');
+let carouselIndex = 0, carouselItems = [];
+let touchStartX = 0, mouseStartX = 0, isDragging = false;
+let isEditMode = false, currentModalPageId = null;
+let allBrandNames = [], allCopyTypes = [], selectedCopyTypes = new Set();
+let currentSort = 'date_desc', currentFilters = { brand: '', dateStart: '', dateEnd: '' };
+let nextCursor = null, hasMore = false, selectedBrand = '';
 
 function saveReactions() { localStorage.setItem('reactions', JSON.stringify(reactionData)); }
 
+// ── 편집 모드 ──────────────────────────────────────────
+function activateEditMode() {
+  isEditMode = true;
+  document.getElementById('editModeBtn').textContent = '📖 읽기 모드';
+  document.getElementById('editModeBtn').classList.add('active');
+  document.getElementById('addFloatingBtn').classList.add('show');
+  renderGallery(allPages, false);
+  if (currentModalPageId) openModal(currentModalPageId);
+}
+function deactivateEditMode() {
+  isEditMode = false;
+  document.getElementById('editModeBtn').textContent = '✏️ 편집 모드';
+  document.getElementById('editModeBtn').classList.remove('active');
+  document.getElementById('addFloatingBtn').classList.remove('show');
+  renderGallery(allPages, false);
+  if (currentModalPageId) openModal(currentModalPageId);
+}
+document.getElementById('editModeBtn').addEventListener('click', () => {
+  if (isEditMode) { deactivateEditMode(); return; }
+  document.getElementById('unlockOverlay').classList.add('show');
+  document.getElementById('unlockInput').value = '';
+  document.getElementById('unlockError').style.display = 'none';
+  setTimeout(() => document.getElementById('unlockInput').focus(), 100);
+});
+document.getElementById('unlockOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('unlockOverlay')) document.getElementById('unlockOverlay').classList.remove('show');
+});
+document.getElementById('unlockSubmit').addEventListener('click', () => {
+  if (document.getElementById('unlockInput').value.trim() === EDIT_CODE) {
+    document.getElementById('unlockOverlay').classList.remove('show');
+    activateEditMode();
+  } else { document.getElementById('unlockError').style.display = 'block'; }
+});
+document.getElementById('unlockInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('unlockSubmit').click(); });
+
 // ── 이벤트 바인딩 ──────────────────────────────────────────
-// 모달 닫기
-document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
-document.getElementById('modalOverlay').addEventListener('click', (e) => {
+document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
-
-// 캐러셀 버튼
 document.getElementById('prevBtn').addEventListener('click', () => moveCarousel(-1));
 document.getElementById('nextBtn').addEventListener('click', () => moveCarousel(1));
 
-// 캐러셀 터치 스와이프
-const carousel = document.getElementById('carousel');
-carousel.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
-carousel.addEventListener('touchend', (e) => {
-  touchEndX = e.changedTouches[0].screenX;
-  const diff = touchStartX - touchEndX;
+const carouselEl = document.getElementById('carousel');
+carouselEl.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+carouselEl.addEventListener('touchend', e => {
+  const diff = touchStartX - e.changedTouches[0].screenX;
+  if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
+});
+document.addEventListener('mousedown', e => { if (e.target.closest('#carousel')) { mouseStartX = e.clientX; isDragging = true; } });
+document.addEventListener('mouseup', e => {
+  if (!isDragging) return; isDragging = false;
+  const diff = mouseStartX - e.clientX;
   if (Math.abs(diff) > 40) moveCarousel(diff > 0 ? 1 : -1);
 });
 
-// 라이트박스
-document.getElementById('lightbox').addEventListener('click', closeLightbox);
-document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
-
-// 이모지 피커 닫기
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.add-reaction-btn') && !e.target.closest('#emojiPicker')) {
-    document.getElementById('emojiPicker').classList.remove('show');
-  }
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox') || e.target.classList.contains('lightbox-inner')) closeLightbox();
 });
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+document.getElementById('lbFit').addEventListener('click', e => { e.stopPropagation(); setLightboxZoom('fit'); });
+document.getElementById('lbOriginal').addEventListener('click', e => { e.stopPropagation(); setLightboxZoom('original'); });
+document.getElementById('lbZoomIn').addEventListener('click', e => { e.stopPropagation(); setLightboxZoom('zoomin'); });
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.add-reaction-btn') && !e.target.closest('#emojiPicker'))
+    document.getElementById('emojiPicker').classList.remove('show');
+  if (!e.target.closest('.sort-wrap')) document.getElementById('sortDropdown').classList.remove('show');
+  if (!e.target.closest('.brand-filter-wrap')) document.getElementById('brandFilterDropdown').classList.remove('show');
+});
+
+// ── 브랜드 필터 ──────────────────────────────────────────
+function renderBrandAllList() {
+  const list = document.getElementById('brandAllList');
+  list.innerHTML = [`<div class="brand-filter-item ${selectedBrand===''?'selected':''}" onclick="selectBrandFilter('')">전체 브랜드</div>`,
+    ...allBrandNames.map(name => `<div class="brand-filter-item ${selectedBrand===name?'selected':''}" onclick="selectBrandFilter('${name}')">${name}</div>`)
+  ].join('');
+}
+function renderBrandSearchResults(query) {
+  const results = document.getElementById('brandSearchResults');
+  const divider = document.getElementById('brandFilterDivider');
+  if (!query) { results.innerHTML = ''; divider.style.display = 'none'; return; }
+  divider.style.display = 'block';
+  const matches = allBrandNames.filter(b => b.toLowerCase().includes(query.toLowerCase()));
+  results.innerHTML = matches.length
+    ? ['<div class="brand-filter-section-label">검색 결과</div>',
+       ...matches.map(n => `<div class="brand-filter-item ${selectedBrand===n?'selected':''}" onclick="selectBrandFilter('${n}')">${n}</div>`)
+      ].join('')
+    : '<div style="padding:8px 12px;font-size:12px;color:#bbb;">검색 결과 없음</div>';
+}
+function selectBrandFilter(name) {
+  selectedBrand = name;
+  document.getElementById('brandFilter').value = name;
+  document.getElementById('brandFilterInput').value = name || '';
+  document.getElementById('brandFilterClear').classList.toggle('show', !!name);
+  document.getElementById('brandFilterDropdown').classList.remove('show');
+  renderBrandAllList();
+}
+document.getElementById('brandFilterInput').addEventListener('focus', () => {
+  renderBrandAllList(); renderBrandSearchResults(document.getElementById('brandFilterInput').value);
+  document.getElementById('brandFilterDropdown').classList.add('show');
+});
+document.getElementById('brandFilterInput').addEventListener('input', function() {
+  renderBrandSearchResults(this.value);
+  document.getElementById('brandFilterClear').classList.toggle('show', !!this.value);
+  document.getElementById('brandFilterDropdown').classList.add('show');
+  if (!this.value) { selectedBrand = ''; document.getElementById('brandFilter').value = ''; renderBrandAllList(); }
+});
+document.getElementById('brandFilterClear').addEventListener('click', () => { selectBrandFilter(''); document.getElementById('brandFilterInput').focus(); });
+
+// ── 정렬 ──────────────────────────────────────────
+function toggleSortDropdown() { document.getElementById('sortDropdown').classList.toggle('show'); }
+function applySort(sort) {
+  currentSort = sort;
+  const labels = { date_desc: '날짜 최신순', date_asc: '날짜 오래된순', reaction_desc: '공감 많은순' };
+  document.getElementById('sortLabel').textContent = labels[sort];
+  document.querySelectorAll('.sort-option').forEach(el => el.classList.toggle('selected', el.dataset.sort === sort));
+  document.getElementById('sortBtn').classList.add('active');
+  document.getElementById('sortDropdown').classList.remove('show');
+  loadPages(currentFilters.brand, currentFilters.dateStart, currentFilters.dateEnd);
+}
 
 // ── 데이터 로드 ──────────────────────────────────────────
 async function loadBrands() {
   try {
     const res = await fetch(`${API_BASE}?action=getBrands`);
     const data = await res.json();
-    const sel = document.getElementById('brandFilter');
-    (data.brands || []).forEach(b => {
-      const opt = document.createElement('option');
-      opt.value = b.name; opt.textContent = b.name;
-      sel.appendChild(opt);
-    });
+    allBrandNames = (data.brands || []).map(b => b.name);
+    renderBrandAllList();
   } catch(e) { console.error(e); }
 }
 
 async function loadPages(brandFilter='', dateStart='', dateEnd='') {
+  currentFilters = { brand: brandFilter, dateStart, dateEnd };
+  nextCursor = null; allPages = [];
   document.getElementById('gallery').innerHTML = '<div class="loading">로딩 중...</div>';
+  await fetchMorePages(true);
+}
+
+async function fetchMorePages(isFirst = false) {
   try {
-    let url = `${API_BASE}?action=getPages`;
-    if (brandFilter) url += `&filter_brand=${encodeURIComponent(brandFilter)}`;
-    if (dateStart) url += `&filter_date_start=${dateStart}`;
-    if (dateEnd) url += `&filter_date_end=${dateEnd}`;
+    const sortDir = currentSort === 'date_asc' ? 'ascending' : 'descending';
+    let url = `${API_BASE}?action=getPages&page_size=${PAGE_SIZE}&sort_dir=${sortDir}`;
+    if (currentFilters.brand) url += `&filter_brand=${encodeURIComponent(currentFilters.brand)}`;
+    if (currentFilters.dateStart) url += `&filter_date_start=${currentFilters.dateStart}`;
+    if (currentFilters.dateEnd) url += `&filter_date_end=${currentFilters.dateEnd}`;
+    if (nextCursor) url += `&start_cursor=${nextCursor}`;
     const res = await fetch(url);
     const data = await res.json();
-    allPages = (data.pages || []).map(p => ({ ...p, _id: p.id.replace(/-/g, '') }));
-    renderGallery(allPages);
+    const newPages = (data.pages || []).map(p => ({ ...p, _id: p.id.replace(/-/g, '') }));
+    if (isFirst) allPages = newPages; else allPages = [...allPages, ...newPages];
+    nextCursor = data.next_cursor || null;
+    hasMore = data.has_more || false;
+    const ctSet = new Set(allCopyTypes);
+    allPages.forEach(p => (p.properties['카피 유형']?.multi_select || []).forEach(t => ctSet.add(t.name)));
+    allCopyTypes = [...ctSet];
+    if (currentSort === 'reaction_desc') {
+      if (hasMore) { await fetchMorePages(false); return; }
+      const sorted = [...allPages].sort((a, b) => getTotalReactions(b._id) - getTotalReactions(a._id));
+      renderGallery(sorted, false);
+    } else {
+      if (isFirst) renderGallery(allPages, false); else renderGallery(newPages, true);
+    }
   } catch(e) {
-    document.getElementById('gallery').innerHTML = `<div class="error">데이터 로드 실패: ${e.message}</div>`;
+    if (isFirst) document.getElementById('gallery').innerHTML = `<div class="error">로드 실패: ${e.message}</div>`;
   }
 }
 
@@ -270,7 +557,6 @@ function getYouTubeId(url) {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : null;
 }
-
 function extractAllMedia(blocks) {
   const items = [];
   for (const block of blocks) {
@@ -278,25 +564,34 @@ function extractAllMedia(blocks) {
       const url = block.image?.file?.url || block.image?.external?.url;
       if (url) items.push({ type: 'image', url });
     } else if (block.type === 'video') {
-      const url = block.video?.file?.url || block.video?.external?.url;
-      if (url) items.push({ type: 'video', url });
+      const url = block.video?.file?.url || block.video?.external?.url || '';
+      const ytId = getYouTubeId(url);
+      if (ytId) items.push({ type: 'youtube', id: ytId });
+      else if (url) items.push({ type: 'video', url });
     } else if (block.type === 'embed') {
       const url = block.embed?.url || '';
       const ytId = getYouTubeId(url);
       if (ytId) items.push({ type: 'youtube', id: ytId });
       else if (url) items.push({ type: 'embed', url });
+    } else if (block.type === 'bookmark') {
+      const url = block.bookmark?.url || '';
+      const ytId = getYouTubeId(url);
+      if (ytId) items.push({ type: 'youtube', id: ytId });
+    } else if (block.type === 'link_preview') {
+      const url = block.link_preview?.url || '';
+      const ytId = getYouTubeId(url);
+      if (ytId) items.push({ type: 'youtube', id: ytId });
     } else if (block.type === 'paragraph') {
       const text = block.paragraph?.rich_text?.map(t => t.plain_text).join('') || '';
       const ytId = getYouTubeId(text);
       if (ytId) items.push({ type: 'youtube', id: ytId });
+    } else if (block.type === 'column_list' || block.type === 'column') {
+      if (block.children?.length) items.push(...extractAllMedia(block.children));
     }
   }
   return items;
 }
-
-function extractFirstMedia(blocks) {
-  return extractAllMedia(blocks)[0] || null;
-}
+function extractFirstMedia(blocks) { return extractAllMedia(blocks)[0] || null; }
 
 function buildCardMediaHTML(media) {
   if (!media) return '<div class="no-media">미디어 없음</div>';
@@ -307,28 +602,82 @@ function buildCardMediaHTML(media) {
   return '<div class="no-media">미디어 없음</div>';
 }
 
-// ── 반응 이모지 ──────────────────────────────────────────
+// ── 본문 텍스트 추출 ──────────────────────────────────────────
+function renderRichText(arr) {
+  if (!arr?.length) return '';
+  return arr.map(t => {
+    let text = t.plain_text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const a = t.annotations || {};
+    if (a.bold) text = `<strong>${text}</strong>`;
+    if (a.italic) text = `<em>${text}</em>`;
+    if (a.strikethrough) text = `<s>${text}</s>`;
+    if (a.underline) text = `<u>${text}</u>`;
+    if (a.code) text = `<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-size:12px;">${text}</code>`;
+    if (a.color && a.color !== 'default') {
+      const colorMap = { gray:'#888',brown:'#9b6b4b',orange:'#d97706',yellow:'#b8860b',green:'#16a34a',blue:'#2563eb',purple:'#7c3aed',pink:'#db2777',red:'#dc2626',gray_background:'#f0f0f0',brown_background:'#fdf0e8',orange_background:'#fff7ed',yellow_background:'#fefce8',green_background:'#f0fdf4',blue_background:'#eff6ff',purple_background:'#faf5ff',pink_background:'#fdf2f8',red_background:'#fef2f2' };
+      const c = colorMap[a.color];
+      if (c) text = a.color.includes('background') ? `<span style="background:${c};padding:1px 3px;border-radius:3px;">${text}</span>` : `<span style="color:${c};">${text}</span>`;
+    }
+    if (t.href) text = `<a href="${t.href}" target="_blank" style="color:#3b82f6;text-decoration:underline;">${text}</a>`;
+    return text;
+  }).join('');
+}
+function extractBodyText(blocks) {
+  const lines = [];
+  for (const block of blocks) {
+    const type = block.type;
+    const getText = (b, key) => renderRichText(b[key]?.rich_text) || '';
+    if (type === 'paragraph') { const t = getText(block,'paragraph'); if (t) lines.push(`<div class="block-text">${t}</div>`); }
+    else if (type === 'heading_1') lines.push(`<div class="block-heading block-heading-1">${getText(block,'heading_1')}</div>`);
+    else if (type === 'heading_2') lines.push(`<div class="block-heading block-heading-2">${getText(block,'heading_2')}</div>`);
+    else if (type === 'heading_3') lines.push(`<div class="block-heading block-heading-3">${getText(block,'heading_3')}</div>`);
+    else if (type === 'bulleted_list_item') {
+      lines.push(`<div class="block-bulleted">${getText(block,'bulleted_list_item')}</div>`);
+      if (block.children?.length) lines.push(`<div style="padding-left:16px;">${extractBodyText(block.children)}</div>`);
+    } else if (type === 'numbered_list_item') {
+      lines.push(`<div class="block-numbered">${getText(block,'numbered_list_item')}</div>`);
+      if (block.children?.length) lines.push(`<div style="padding-left:16px;">${extractBodyText(block.children)}</div>`);
+    } else if (type === 'quote') lines.push(`<div class="block-quote">${getText(block,'quote')}</div>`);
+    else if (type === 'toggle') {
+      const label = getText(block,'toggle');
+      const inner = block.children ? extractBodyText(block.children) : '';
+      const tid = 'tg_'+Math.random().toString(36).slice(2);
+      lines.push(`<div class="toggle-section" style="margin:4px 0;"><button class="toggle-header" data-toggle="${tid}"><span>${label}</span><span class="toggle-arrow" id="arr_${tid}">▼</span></button><div class="toggle-body" id="${tid}">${inner}</div></div>`);
+    } else if (type === 'column_list' || type === 'column') {
+      if (block.children) lines.push(extractBodyText(block.children));
+    }
+  }
+  return lines.join('');
+}
+
+// ── 공감 ──────────────────────────────────────────
+function getTotalReactions(pageId) {
+  const r = reactionData[pageId] || {};
+  return Object.entries(r).filter(([k,v]) => !k.startsWith('_user_') && typeof v === 'number').reduce((s,[,v]) => s+v, 0);
+}
 function buildReactionHTML(pageId) {
   const r = reactionData[pageId] || {};
-  let html = DEFAULT_REACTIONS.map(emoji => {
+  const allEmojis = [...DEFAULT_REACTIONS, ...Object.keys(r).filter(k => !k.startsWith('_user_') && !DEFAULT_REACTIONS.includes(k))];
+  let html = allEmojis.map(emoji => {
     const count = r[emoji] || 0;
+    if (!count && !DEFAULT_REACTIONS.includes(emoji)) return '';
     const active = r[`_user_${emoji}`] ? 'active' : '';
     return `<button class="reaction-btn ${active}" data-page="${pageId}" data-emoji="${emoji}">${emoji}<span class="reaction-count">${count||''}</span></button>`;
   }).join('');
   html += `<button class="add-reaction-btn" data-page="${pageId}">+</button>`;
+  const total = getTotalReactions(pageId);
+  if (total > 0) html += `<span class="reaction-total">총 ${total}</span>`;
   return html;
 }
 
-document.getElementById('gallery').addEventListener('click', (e) => {
-  // 반응 버튼
+// ── 갤러리 이벤트 ──────────────────────────────────────────
+document.getElementById('gallery').addEventListener('click', e => {
   const rb = e.target.closest('.reaction-btn');
   if (rb) {
     e.stopPropagation();
-    const pageId = rb.dataset.page;
-    const emoji = rb.dataset.emoji;
+    const pageId = rb.dataset.page, emoji = rb.dataset.emoji;
     if (!reactionData[pageId]) reactionData[pageId] = {};
-    const uk = `_user_${emoji}`;
-    const had = reactionData[pageId][uk];
+    const uk = `_user_${emoji}`, had = reactionData[pageId][uk];
     reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (had ? -1 : 1);
     if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
     reactionData[pageId][uk] = !had;
@@ -337,253 +686,391 @@ document.getElementById('gallery').addEventListener('click', (e) => {
     if (card) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
     return;
   }
-  // 이모지 추가 버튼
   const ab = e.target.closest('.add-reaction-btn');
   if (ab) {
     e.stopPropagation();
     const pageId = ab.dataset.page;
     const picker = document.getElementById('emojiPicker');
-    picker.innerHTML = EXTRA_EMOJIS.map(em =>
-      `<span class="emoji-option" data-page="${pageId}" data-emoji="${em}">${em}</span>`
-    ).join('');
+    picker.innerHTML = EXTRA_EMOJIS.map(em => `<span class="emoji-option" data-page="${pageId}" data-emoji="${em}">${em}</span>`).join('');
     const rect = ab.getBoundingClientRect();
     picker.style.top = (rect.bottom + 4) + 'px';
     picker.style.left = rect.left + 'px';
     picker.classList.toggle('show');
     return;
   }
-  // 카드 클릭 → 모달 열기
+  const cardImg = e.target.closest('.card-media img');
+  if (cardImg && !cardImg.closest('.video-thumb')) { e.stopPropagation(); openLightbox(cardImg.src); return; }
   const card = e.target.closest('.card');
   if (card) openModal(card.dataset.pageId);
 });
-
-document.getElementById('emojiPicker').addEventListener('click', (e) => {
+document.getElementById('emojiPicker').addEventListener('click', e => {
   const opt = e.target.closest('.emoji-option');
   if (!opt) return;
-  const pageId = opt.dataset.page;
-  const emoji = opt.dataset.emoji;
+  const { page: pageId, emoji } = opt.dataset;
   document.getElementById('emojiPicker').classList.remove('show');
   if (!reactionData[pageId]) reactionData[pageId] = {};
-  const uk = `_user_${emoji}`;
-  const had = reactionData[pageId][uk];
+  const uk = `_user_${emoji}`, had = reactionData[pageId][uk];
   reactionData[pageId][emoji] = (reactionData[pageId][emoji] || 0) + (had ? -1 : 1);
   if (reactionData[pageId][emoji] <= 0) delete reactionData[pageId][emoji];
   reactionData[pageId][uk] = !had;
   saveReactions();
   document.querySelectorAll('.card').forEach(card => {
-    if (card.dataset.pageId === pageId)
-      card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
+    if (card.dataset.pageId === pageId) card.querySelector('.card-reactions').innerHTML = buildReactionHTML(pageId);
   });
 });
 
 // ── 갤러리 렌더 ──────────────────────────────────────────
-function renderGallery(pages) {
+function buildCardHTML(page) {
+  const props = page.properties;
+  const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '(제목 없음)';
+  const brand = props['브랜드명']?.select?.name || '';
+  const date = props['날짜']?.date?.start || '';
+  const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
+  const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
+  const tags = props['태그']?.multi_select?.map(t => t.name) || [];
+  const media = extractFirstMedia(page.blocks || []);
+  const hasBrand = !!brand, hasTypes = copyTypes.length > 0;
+  const divider = hasBrand && hasTypes ? '<span class="badge-divider"></span>' : '';
+  return `<div class="card" data-page-id="${page._id}">
+    <div class="card-media">${buildCardMediaHTML(media)}</div>
+    <div class="card-body">
+      <div class="badge-row">
+        ${brand ? `<span class="card-brand">${brand}</span>` : ''}${divider}
+        ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
+      </div>
+      <div class="card-title">${title}</div>
+      <div class="card-date">${date}</div>
+      ${overview ? `<div class="card-overview-label">브랜드 개요</div><div class="card-overview">${overview}</div>` : ''}
+    </div>
+    ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
+    <div class="card-reactions">${buildReactionHTML(page._id)}</div>
+  </div>`;
+}
+function renderGallery(pages, isAppend = false) {
   const gallery = document.getElementById('gallery');
-  if (!pages.length) { gallery.innerHTML = '<div class="loading">등록된 레퍼런스가 없습니다</div>'; return; }
-  gallery.innerHTML = pages.map(page => {
-    const props = page.properties;
-    const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '(제목 없음)';
-    const brand = props['브랜드명']?.select?.name || '';
-    const date = props['날짜']?.date?.start || '';
-    const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
-    const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
-    const tags = props['태그']?.multi_select?.map(t => t.name) || [];
-    const media = extractFirstMedia(page.blocks || []);
-
-    const hasBrand = !!brand;
-    const hasTypes = copyTypes.length > 0;
-    const divider = hasBrand && hasTypes ? '<span class="badge-divider"></span>' : '';
-
-    return `
-      <div class="card" data-page-id="${page._id}">
-        <div class="card-media">${buildCardMediaHTML(media)}</div>
-        <div class="card-body">
-          <div class="badge-row">
-            ${brand ? `<span class="card-brand">${brand}</span>` : ''}
-            ${divider}
-            ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
-          </div>
-          <div class="card-title">${title}</div>
-          <div class="card-date">${date}</div>
-          ${overview ? `<div class="card-overview-label">브랜드 개요</div><div class="card-overview">${overview}</div>` : ''}
-        </div>
-        ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
-        <div class="card-reactions">${buildReactionHTML(page._id)}</div>
-      </div>`;
-  }).join('');
+  if (!pages.length && !isAppend) { gallery.innerHTML = '<div class="loading">등록된 레퍼런스가 없습니다</div>'; return; }
+  const existing = gallery.querySelector('.load-more-wrap');
+  if (existing) existing.remove();
+  if (isAppend) {
+    const frag = document.createDocumentFragment();
+    pages.forEach(page => { const d = document.createElement('div'); d.innerHTML = buildCardHTML(page); frag.appendChild(d.firstElementChild); });
+    gallery.appendChild(frag);
+  } else {
+    gallery.innerHTML = pages.map(buildCardHTML).join('');
+  }
+  if (hasMore) {
+    const wrap = document.createElement('div');
+    wrap.className = 'load-more-wrap';
+    wrap.innerHTML = `<button class="load-more-btn" id="loadMoreBtn">↓ 20개 더 불러오기</button><span class="load-more-count">현재 ${allPages.length}개 표시 중</span>`;
+    wrap.querySelector('#loadMoreBtn').addEventListener('click', fetchMorePages);
+    gallery.appendChild(wrap);
+  }
 }
 
 // ── 캐러셀 ──────────────────────────────────────────
 function renderCarousel(mediaItems) {
-  carouselItems = mediaItems;
-  carouselIndex = 0;
-
+  carouselItems = mediaItems; carouselIndex = 0;
   const track = document.getElementById('carouselTrack');
   const footer = document.getElementById('carouselFooter');
-  const counter = document.getElementById('carouselCounter');
-  const dots = document.getElementById('carouselDots');
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
-
   if (!mediaItems.length) {
     track.innerHTML = '<div class="carousel-slide"><div class="no-media">미디어 없음</div></div>';
-    footer.style.display = 'none';
-    prevBtn.classList.add('hidden');
-    nextBtn.classList.add('hidden');
-    return;
+    footer.style.display = 'none'; prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); return;
   }
-
-  track.innerHTML = mediaItems.map((m) => {
+  track.innerHTML = mediaItems.map(m => {
     let inner = '';
-    if (m.type === 'image') inner = `<img src="${m.url}" alt="" data-lightbox="${m.url}">`;
-    else if (m.type === 'youtube') inner = `<iframe src="https://www.youtube.com/embed/${m.id}" allowfullscreen></iframe>`;
-    else if (m.type === 'video') inner = `<video src="${m.url}" controls style="max-width:100%;max-height:100%"></video>`;
-    else if (m.type === 'embed') inner = `<iframe src="${m.url}" allowfullscreen style="width:100%;aspect-ratio:16/9"></iframe>`;
+    if (m.type === 'image') inner = `<img src="${m.url}" alt="" data-lightbox="${m.url}" style="max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;">`;
+    else if (m.type === 'youtube') inner = `<iframe src="https://www.youtube.com/embed/${m.id}" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;"></iframe>`;
+    else if (m.type === 'video') inner = `<video src="${m.url}" controls style="max-width:100%;max-height:100%;"></video>`;
+    else if (m.type === 'embed') inner = `<iframe src="${m.url}" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;"></iframe>`;
     return `<div class="carousel-slide">${inner}</div>`;
   }).join('');
-
-  // 이미지 클릭 → 라이트박스
-  track.querySelectorAll('img[data-lightbox]').forEach(img => {
-    img.addEventListener('click', () => openLightbox(img.dataset.lightbox));
-  });
-
+  track.querySelectorAll('img[data-lightbox]').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.lightbox)));
   if (mediaItems.length > 1) {
     footer.style.display = 'flex';
-    counter.textContent = `1 / ${mediaItems.length}`;
-    dots.innerHTML = mediaItems.map((_, i) =>
-      `<button class="carousel-dot ${i===0?'active':''}" data-index="${i}"></button>`
-    ).join('');
-    dots.querySelectorAll('.carousel-dot').forEach(dot => {
-      dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.index)));
-    });
-    prevBtn.classList.remove('hidden');
-    nextBtn.classList.remove('hidden');
-  } else {
-    footer.style.display = 'none';
-    prevBtn.classList.add('hidden');
-    nextBtn.classList.add('hidden');
-  }
-
+    document.getElementById('carouselCounter').textContent = `1 / ${mediaItems.length}`;
+    document.getElementById('carouselDots').innerHTML = mediaItems.map((_,i) => `<button class="carousel-dot ${i===0?'active':''}" data-index="${i}"></button>`).join('');
+    document.getElementById('carouselDots').querySelectorAll('.carousel-dot').forEach(dot => dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.index))));
+    prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden');
+  } else { footer.style.display = 'none'; prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); }
   updateCarousel();
 }
-
 function updateCarousel() {
-  const track = document.getElementById('carouselTrack');
-  track.style.transform = `translateX(-${carouselIndex * 100}%)`;
-  document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === carouselIndex));
-  const counter = document.getElementById('carouselCounter');
-  if (carouselItems.length > 1) counter.textContent = `${carouselIndex + 1} / ${carouselItems.length}`;
+  document.getElementById('carouselTrack').style.transform = `translateX(-${carouselIndex * 100}%)`;
+  document.querySelectorAll('.carousel-dot').forEach((d,i) => d.classList.toggle('active', i === carouselIndex));
+  if (carouselItems.length > 1) document.getElementById('carouselCounter').textContent = `${carouselIndex+1} / ${carouselItems.length}`;
 }
-
 function moveCarousel(dir) {
   if (carouselItems.length < 2) return;
   carouselIndex = (carouselIndex + dir + carouselItems.length) % carouselItems.length;
   updateCarousel();
 }
-
-function goToSlide(i) {
-  carouselIndex = i;
-  updateCarousel();
-}
+function goToSlide(i) { carouselIndex = i; updateCarousel(); }
 
 // ── 라이트박스 ──────────────────────────────────────────
+function setLightboxZoom(mode) {
+  const img = document.getElementById('lightboxImg');
+  img.className = '';
+  if (mode === 'fit') img.classList.add('fit-screen');
+  else if (mode === 'original') img.classList.add('zoom-original');
+  else img.classList.add('zoom-in');
+  ['lbFit','lbOriginal','lbZoomIn'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById({fit:'lbFit',original:'lbOriginal',zoomin:'lbZoomIn'}[mode]).classList.add('active');
+}
 function openLightbox(url) {
-  document.getElementById('lightboxImg').src = url;
+  const img = document.getElementById('lightboxImg');
+  img.src = url; img.className = 'fit-screen';
+  document.getElementById('lbFit').classList.add('active');
+  document.getElementById('lbOriginal').classList.remove('active');
+  document.getElementById('lbZoomIn').classList.remove('active');
   document.getElementById('lightbox').classList.add('show');
+  document.getElementById('lightbox').scrollTop = 0;
 }
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('show');
-}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
 
 // ── 토글 ──────────────────────────────────────────
 function buildToggle(label, content) {
   if (!content) return '';
   const id = 'tg_' + Math.random().toString(36).slice(2);
-  return `
-    <div class="toggle-section">
-      <button class="toggle-header" data-toggle="${id}">
-        <span>${label}</span>
-        <span class="toggle-arrow" id="arr_${id}">▼</span>
-      </button>
-      <div class="toggle-body" id="${id}">${content}</div>
-    </div>`;
+  return `<div class="toggle-section"><button class="toggle-header" data-toggle="${id}"><span>${label}</span><span class="toggle-arrow" id="arr_${id}">▼</span></button><div class="toggle-body" id="${id}">${content}</div></div>`;
 }
-
-document.getElementById('modal').addEventListener('click', (e) => {
+document.getElementById('modal').addEventListener('click', e => {
   const btn = e.target.closest('.toggle-header');
   if (!btn) return;
   const id = btn.dataset.toggle;
   document.getElementById(id).classList.toggle('open');
-  document.getElementById('arr_' + id).classList.toggle('open');
+  document.getElementById('arr_'+id).classList.toggle('open');
 });
+
+// ── 인라인 편집 ──────────────────────────────────────────
+function buildEditableField(label, valueHTML, fieldKey, pageId, isTextarea=false) {
+  const id = `field_${fieldKey.replace(/[^a-zA-Z0-9]/g,'_')}_${pageId}`;
+  const editBtn = isEditMode ? `<button class="field-edit-btn" onclick="startInlineEdit('${id}','${fieldKey}','${pageId}')" title="${label} 편집">✏️</button>` : '';
+  return `<div class="inline-edit-wrap" id="wrap_${id}">
+    <div style="display:flex;align-items:flex-start;gap:6px;"><div style="flex:1">${valueHTML}</div>${editBtn}</div>
+    <div id="edit_${id}" style="display:none;">
+      ${isTextarea ? `<textarea id="input_${id}" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;min-height:80px;resize:vertical;"></textarea>`
+                   : `<input id="input_${id}" type="text" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;">`}
+      <div class="inline-edit-actions">
+        <button class="inline-cancel-btn" onclick="cancelInlineEdit('${id}')">취소</button>
+        <button class="inline-save-btn" onclick="saveInlineEdit('${id}','${fieldKey}','${pageId}')">저장</button>
+      </div>
+    </div>
+  </div>`;
+}
+function buildEditableToggle(label, value, fieldKey, pageId) {
+  const id = 'tg_'+Math.random().toString(36).slice(2);
+  const fid = `field_${fieldKey.replace(/[^a-zA-Z0-9]/g,'_')}_${pageId}`;
+  return `<div class="toggle-section"><button class="toggle-header" data-toggle="${id}"><span>${label}</span><span class="toggle-arrow" id="arr_${id}">▼</span></button>
+    <div class="toggle-body" id="${id}">
+      <div class="inline-edit-wrap" id="wrap_${fid}">
+        <div style="display:flex;align-items:flex-start;gap:6px;"><div style="flex:1;white-space:pre-wrap;">${value||'(없음)'}</div><button class="field-edit-btn" onclick="startInlineEdit('${fid}','${fieldKey}','${pageId}')">✏️</button></div>
+        <div id="edit_${fid}" style="display:none;">
+          <textarea id="input_${fid}" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;min-height:80px;resize:vertical;">${value||''}</textarea>
+          <div class="inline-edit-actions"><button class="inline-cancel-btn" onclick="cancelInlineEdit('${fid}')">취소</button><button class="inline-save-btn" onclick="saveInlineEdit('${fid}','${fieldKey}','${pageId}')">저장</button></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function startInlineEdit(id, fieldKey, pageId) {
+  document.getElementById(`edit_${id}`).style.display = 'block';
+  const input = document.getElementById(`input_${id}`);
+  const page = allPages.find(p => p._id === pageId);
+  if (!page || !input) return;
+  const props = page.properties;
+  let val = '';
+  if (fieldKey === '콘텐츠') val = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
+  else if (fieldKey === '날짜') val = props['날짜']?.date?.start || '';
+  else val = props[fieldKey]?.rich_text?.map(t => t.plain_text).join('') || '';
+  input.value = val;
+  input.focus();
+}
+function cancelInlineEdit(id) { document.getElementById(`edit_${id}`).style.display = 'none'; }
+async function saveInlineEdit(id, fieldKey, pageId) {
+  const input = document.getElementById(`input_${id}`);
+  const value = input.value;
+  const saveBtn = document.querySelector(`#edit_${id} .inline-save-btn`);
+  saveBtn.textContent = '저장 중...'; saveBtn.disabled = true;
+  const rawId = pageId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+  try {
+    const res = await fetch('/api/notion?action=updatePage', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pageId: rawId, properties: { [fieldKey]: value } })
+    });
+    if (!res.ok) throw new Error('저장 실패');
+    const page = allPages.find(p => p._id === pageId);
+    if (page) {
+      const props = page.properties;
+      if (fieldKey === '콘텐츠') props['콘텐츠'].title = [{ plain_text: value }];
+      else if (fieldKey === '날짜') props['날짜'].date = { start: value };
+      else if (props[fieldKey]?.rich_text !== undefined) props[fieldKey].rich_text = [{ plain_text: value }];
+    }
+    document.getElementById(`edit_${id}`).style.display = 'none';
+    openModal(pageId);
+  } catch(err) {
+    alert('저장 오류: ' + err.message);
+    saveBtn.textContent = '저장'; saveBtn.disabled = false;
+  }
+}
 
 // ── 모달 열기 ──────────────────────────────────────────
 function openModal(pageId) {
-  const page = allPages.find(p => p._id === pageId);
-  if (!page) return;
-  const props = page.properties;
-  const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
-  const brand = props['브랜드명']?.select?.name || '';
-  const date = props['날짜']?.date?.start || '';
-  const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
-  const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
-  const campaign = props['주목할 캠페인/콘텐츠']?.rich_text?.map(t => t.plain_text).join('') || '';
-  const idea = props['적용해 볼 아이디어']?.rich_text?.map(t => t.plain_text).join('') || '';
-  const insight = props['인사이트 (내가 배운 것)']?.rich_text?.map(t => t.plain_text).join('') || '';
-  const tags = props['태그']?.multi_select?.map(t => t.name) || [];
-  const sourceUrl = props['출처 URL']?.url || '';
-  const mediaItems = extractAllMedia(page.blocks || []);
-
-  renderCarousel(mediaItems);
-
-  const hasBrand = !!brand;
-  const hasTypes = copyTypes.length > 0;
-  const divider = hasBrand && hasTypes ? '<span class="modal-badge-divider"></span>' : '';
-
-  document.getElementById('modalRight').innerHTML = `
-    <div class="modal-badge-row">
-      ${brand ? `<span class="card-brand">${brand}</span>` : ''}
-      ${divider}
-      ${copyTypes.map(t => `<span class="card-type">${t}</span>`).join('')}
-    </div>
-    <div class="modal-title">${title}</div>
-    <div class="modal-date">${date}</div>
-    ${overview ? `<div class="modal-overview-label">브랜드 개요</div><div class="modal-overview">${overview}</div>` : ''}
-    ${sourceUrl ? `<div class="modal-source"><a href="${sourceUrl}" target="_blank">🔗 출처 바로가기</a></div>` : ''}
-    ${buildToggle('주목할 캠페인/콘텐츠', campaign)}
-    ${buildToggle('적용해 볼 아이디어', idea)}
-    ${buildToggle('인사이트 (내가 배운 것)', insight)}
-    ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
-  `;
-
-  document.getElementById('modalOverlay').classList.add('show');
+  try {
+    const page = allPages.find(p => p._id === pageId);
+    if (!page) return;
+    currentModalPageId = pageId;
+    const props = page.properties;
+    const title = props['콘텐츠']?.title?.map(t => t.plain_text).join('') || '';
+    const brand = props['브랜드명']?.select?.name || '';
+    const date = props['날짜']?.date?.start || '';
+    const copyTypes = props['카피 유형']?.multi_select?.map(t => t.name) || [];
+    const overview = props['브랜드 개요']?.rich_text?.map(t => t.plain_text).join('') || '';
+    const campaign = props['주목할 캠페인/콘텐츠']?.rich_text?.map(t => t.plain_text).join('') || '';
+    const idea = props['적용해 볼 아이디어']?.rich_text?.map(t => t.plain_text).join('') || '';
+    const insight = props['인사이트 (내가 배운 것)']?.rich_text?.map(t => t.plain_text).join('') || '';
+    const tags = props['태그']?.multi_select?.map(t => t.name) || [];
+    const sourceUrl = props['출처 URL']?.url || '';
+    const mediaItems = extractAllMedia(page.blocks || []);
+    const bodyText = extractBodyText(page.blocks || []);
+    renderCarousel(mediaItems);
+    const eb = isEditMode;
+    const hasBrand = !!brand, hasTypes = copyTypes.length > 0;
+    const divider = hasBrand && hasTypes ? '<span class="modal-badge-divider"></span>' : '';
+    document.getElementById('modalRight').innerHTML = `
+      <button class="modal-close" id="modalCloseBtn">✕</button>
+      <div class="modal-badge-row">
+        ${brand ? `<span class="card-brand">${brand}</span>` : ''}${divider}
+        ${copyTypes.map(t=>`<span class="card-type">${t}</span>`).join('')}
+      </div>
+      ${eb ? buildEditableField('제목',`<div class="modal-title">${title}</div>`,'콘텐츠',pageId)
+           : `<div class="modal-title">${title}</div>`}
+      ${eb ? buildEditableField('날짜',`<div class="modal-date">${date}</div>`,'날짜',pageId)
+           : `<div class="modal-date">${date}</div>`}
+      ${overview || eb ? `<div class="modal-overview-label">브랜드 개요</div>
+        ${eb ? buildEditableField('브랜드 개요',`<div class="modal-overview">${overview||'(없음)'}</div>`,'브랜드 개요',pageId,true)
+             : `<div class="modal-overview">${overview}</div>`}` : ''}
+      ${sourceUrl ? `<div class="modal-source"><a href="${sourceUrl}" target="_blank">🔗 출처 바로가기</a></div>` : ''}
+      ${eb ? buildEditableToggle('주목할 캠페인/콘텐츠',campaign,'주목할 캠페인/콘텐츠',pageId) : buildToggle('주목할 캠페인/콘텐츠',campaign)}
+      ${eb ? buildEditableToggle('적용해 볼 아이디어',idea,'적용해 볼 아이디어',pageId) : buildToggle('적용해 볼 아이디어',idea)}
+      ${eb ? buildEditableToggle('인사이트 (내가 배운 것)',insight,'인사이트 (내가 배운 것)',pageId) : buildToggle('인사이트 (내가 배운 것)',insight)}
+      ${buildToggle('📄 본문 내용', bodyText)}
+      ${tags.length ? `<div class="modal-tags">${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>` : ''}
+    `;
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').classList.add('show');
+  } catch(err) { console.error('openModal error:', err); }
 }
-
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
+  currentModalPageId = null;
 }
+
+// ── 카드 추가 ──────────────────────────────────────────
+function createMediaItem(value='') {
+  const item = document.createElement('div');
+  item.className = 'media-url-item'; item.draggable = true;
+  item.innerHTML = `<span class="drag-handle">⠿</span><input type="text" placeholder="이미지 URL 또는 유튜브 링크" value="${value}"><button class="media-url-remove">✕</button>`;
+  item.querySelector('.media-url-remove').addEventListener('click', () => item.remove());
+  item.addEventListener('dragstart', e => { e.dataTransfer.effectAllowed='move'; setTimeout(()=>item.classList.add('dragging'),0); });
+  item.addEventListener('dragend', () => item.classList.remove('dragging'));
+  item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('drag-over'); });
+  item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+  item.addEventListener('drop', e => {
+    e.preventDefault(); item.classList.remove('drag-over');
+    const dragging = document.querySelector('.media-url-item.dragging');
+    if (dragging && dragging !== item) {
+      const list = document.getElementById('mediaUrlList');
+      const items = [...list.children];
+      if (items.indexOf(dragging) < items.indexOf(item)) list.insertBefore(dragging, item.nextSibling);
+      else list.insertBefore(dragging, item);
+    }
+  });
+  return item;
+}
+function addMediaUrlField() { document.getElementById('mediaUrlList').appendChild(createMediaItem()); }
+
+function renderCopyTypeButtons(selected) {
+  selectedCopyTypes = new Set(selected);
+  const wrap = document.getElementById('ac-copytypes-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = allCopyTypes.map(ct => {
+    const sel = selectedCopyTypes.has(ct);
+    return `<button type="button" onclick="toggleCopyType('${ct}')" style="padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid ${sel?'#3b82f6':'#ddd'};background:${sel?'#eff6ff':'white'};color:${sel?'#3b82f6':'#666'};">${ct}</button>`;
+  }).join('');
+  document.getElementById('ac-copytypes').value = [...selectedCopyTypes].join(',');
+}
+function toggleCopyType(ct) {
+  if (selectedCopyTypes.has(ct)) selectedCopyTypes.delete(ct); else selectedCopyTypes.add(ct);
+  renderCopyTypeButtons([...selectedCopyTypes]);
+}
+
+document.getElementById('ac-brand').addEventListener('input', function() {
+  const val = this.value.trim().toLowerCase();
+  const list = document.getElementById('brandAutocomplete');
+  if (!val) { list.classList.remove('show'); return; }
+  const matches = allBrandNames.filter(b => b.toLowerCase().includes(val));
+  const isExact = allBrandNames.some(b => b.toLowerCase() === val);
+  let html = matches.map(b => `<div class="autocomplete-item" onclick="selectBrandAC('${b}')"><span>${b}</span><span class="ac-hint">선택하기</span></div>`).join('');
+  if (!isExact && val) html += `<div class="autocomplete-item autocomplete-new" onclick="selectBrandAC('${this.value.trim()}')"><span>+ "${this.value.trim()}" 새로 추가</span><span class="ac-hint">선택하기</span></div>`;
+  list.innerHTML = html; list.classList.toggle('show', html.length > 0);
+});
+document.addEventListener('click', e => { if (!e.target.closest('.autocomplete-wrap')) document.getElementById('brandAutocomplete').classList.remove('show'); });
+function selectBrandAC(name) { document.getElementById('ac-brand').value = name; document.getElementById('brandAutocomplete').classList.remove('show'); }
+
+function openAddCardModal() {
+  ['ac-title','ac-brand','ac-overview','ac-campaign','ac-idea','ac-insight','ac-url','ac-tags'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ac-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ac-copytypes').value = '';
+  renderCopyTypeButtons([]);
+  const mlist = document.getElementById('mediaUrlList');
+  mlist.innerHTML = ''; mlist.appendChild(createMediaItem());
+  document.getElementById('addCardOverlay').classList.add('show');
+}
+document.getElementById('addFloatingBtn').addEventListener('click', openAddCardModal);
+document.getElementById('addCancelBtn').addEventListener('click', () => document.getElementById('addCardOverlay').classList.remove('show'));
+document.getElementById('addCardOverlay').addEventListener('click', e => { if (e.target === document.getElementById('addCardOverlay')) document.getElementById('addCardOverlay').classList.remove('show'); });
+document.getElementById('addSaveBtn').addEventListener('click', async () => {
+  const title = document.getElementById('ac-title').value.trim();
+  if (!title) { alert('제목을 입력해주세요'); return; }
+  const saveBtn = document.getElementById('addSaveBtn');
+  saveBtn.textContent = '저장 중...'; saveBtn.disabled = true;
+  const mediaUrls = Array.from(document.querySelectorAll('#mediaUrlList .media-url-item input')).map(i => i.value.trim()).filter(Boolean);
+  const body = {
+    properties: {
+      '콘텐츠': title, '브랜드명': document.getElementById('ac-brand').value.trim(),
+      '날짜': document.getElementById('ac-date').value,
+      '카피 유형': [...selectedCopyTypes],
+      '브랜드 개요': document.getElementById('ac-overview').value.trim(),
+      '주목할 캠페인/콘텐츠': document.getElementById('ac-campaign').value.trim(),
+      '적용해 볼 아이디어': document.getElementById('ac-idea').value.trim(),
+      '인사이트 (내가 배운 것)': document.getElementById('ac-insight').value.trim(),
+      '출처 URL': document.getElementById('ac-url').value.trim(),
+      '태그': document.getElementById('ac-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    }, mediaUrls
+  };
+  try {
+    const res = await fetch('/api/notion?action=createPage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if (!res.ok) throw new Error(await res.text());
+    document.getElementById('addCardOverlay').classList.remove('show');
+    await loadPages();
+  } catch(err) { alert('저장 오류: '+err.message); }
+  finally { saveBtn.textContent='저장'; saveBtn.disabled=false; }
+});
 
 // ── 필터 ──────────────────────────────────────────
-function applyFilters() {
-  loadPages(
-    document.getElementById('brandFilter').value,
-    document.getElementById('dateStart').value,
-    document.getElementById('dateEnd').value
-  );
-}
-
+function applyFilters() { loadPages(document.getElementById('brandFilter').value, document.getElementById('dateStart').value, document.getElementById('dateEnd').value); }
 function applyMonthFilter() {
-  const end = new Date();
-  const start = new Date();
-  start.setMonth(start.getMonth() - 1);
+  const end = new Date(), start = new Date();
+  start.setMonth(start.getMonth()-1);
   const fmt = d => d.toISOString().split('T')[0];
   document.getElementById('dateStart').value = fmt(start);
   document.getElementById('dateEnd').value = fmt(end);
   loadPages(document.getElementById('brandFilter').value, fmt(start), fmt(end));
 }
-
 function resetFilters() {
-  document.getElementById('brandFilter').value = '';
+  selectBrandFilter('');
   document.getElementById('dateStart').value = '';
   document.getElementById('dateEnd').value = '';
   loadPages();
